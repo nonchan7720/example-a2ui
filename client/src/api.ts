@@ -49,3 +49,28 @@ export async function sendApproval(surfaceId: string, approved: boolean, input?:
     body: JSON.stringify({ surfaceId, approved, input }),
   })
 }
+
+/** 選択肢の 1 ページ。nextCursor があれば続きがある。 */
+export type OptionPage = { items: { id: string; name: string }[]; nextCursor?: string }
+
+/**
+ * 選択肢を 1 ページ取る。サーバーは Claude 経由で MCP のツールを呼ぶので、1 回に数秒かかる。
+ * 同じ引数の結果は、ページを開いている間は使い回す。
+ */
+const optionPages = new Map<string, Promise<OptionPage>>()
+export function fetchOptions(tool: string, args: Record<string, unknown>): Promise<OptionPage> {
+  const key = JSON.stringify([tool, args])
+  let page = optionPages.get(key)
+  if (!page) {
+    page = fetch('/api/options', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tool, args }) }).then(
+      async (response) => {
+        const body = await response.json()
+        if (!response.ok) throw new Error(body.error ?? `サーバーエラー: ${response.status}`)
+        return body as OptionPage
+      },
+    )
+    page.catch(() => optionPages.delete(key)) // 失敗は覚えておかない
+    optionPages.set(key, page)
+  }
+  return page
+}

@@ -1,8 +1,24 @@
-// 基本カタログに、資料を表示する 5 つのコンポーネントと、明細の表入力(LineItems)を足したカタログ文書を作る。
+// 基本カタログに、資料を表示する 5 つのコンポーネントと、入力用の 2 つ(LineItems、Lookup)を足したカタログ文書を作る。
 // クライアント側の実装は client/src/catalog/ にあり、名前とプロパティをここと揃える。
 export const DOCUMENT_CATALOG_ID = 'https://example.com/a2ui-chat/catalogs/documents/v1/catalog.json'
 
 const text = (description: string) => ({ type: 'string', description })
+
+/** 選択肢を返すツールの指定(LineItems の lookup 列と Lookup で使う)。 */
+const optionSource = {
+  type: 'object',
+  description: 'Where the choices come from: a tool that returns { items: [{ id, name }], nextCursor? } one page at a time.',
+  properties: {
+    tool: text('Name of the tool.'),
+    params: {
+      type: 'object',
+      description: 'Extra tool arguments taken from the form: argument name -> property name of `context`.',
+      additionalProperties: { type: 'string' },
+    },
+  },
+  required: ['tool'],
+}
+const dynamicValue = (description: string) => ({ $ref: 'common_types.json#/$defs/DynamicValue', description })
 
 const components = {
   Table: {
@@ -90,7 +106,8 @@ const components = {
           properties: {
             key: text('Property name of the row object that this column edits.'),
             label: text('Column header.'),
-            type: { type: 'string', enum: ['text', 'number', 'select'], description: 'Input type of the cells.' },
+            type: { type: 'string', enum: ['text', 'number', 'select', 'lookup'], description: 'Input type of the cells.' },
+            source: optionSource,
             options: {
               type: 'array',
               description: 'The choices of a select column.',
@@ -100,9 +117,22 @@ const components = {
           required: ['key', 'label', 'type'],
         },
       },
-      value: { $ref: 'common_types.json#/$defs/DynamicValue', description: 'Data binding to the array of row objects, e.g. $/form/items.' },
+      value: dynamicValue('Data binding to the array of row objects, e.g. $/form/items.'),
+      context: dynamicValue('Data binding to the object that lookup columns read their tool arguments from.'),
     },
     required: ['component', 'label', 'columns', 'value'],
+  },
+  Lookup: {
+    type: 'object',
+    description: 'A searchable select whose choices are loaded from a tool, page by page as the user scrolls. Stores the id of the chosen item.',
+    properties: {
+      component: { const: 'Lookup' },
+      label: text('Label shown above the field.'),
+      source: optionSource,
+      value: dynamicValue('Data binding to the chosen id.'),
+      context: dynamicValue('Data binding to the object that `source.params` reads tool arguments from.'),
+    },
+    required: ['component', 'label', 'source', 'value'],
   },
   SvgImage: {
     type: 'object',

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { A2uiGenerator, CatalogConfig, InMemoryCatalogProvider, type RendererCapabilities, type RendererState, type StreamPart } from '@a2ui/agent'
 import { withDocumentComponents } from './document-catalog.ts'
 
-const catalogPath = fileURLToPath(new URL('../node_modules/@a2ui/web_core/src/v1_0/schemas/catalogs/basic/catalog.json', import.meta.url))
+const catalogPath = fileURLToPath(new URL('../../node_modules/@a2ui/web_core/src/v1_0/schemas/catalogs/basic/catalog.json', import.meta.url))
 
 // 起動時に 1 回だけ作る。基本カタログと、それに資料表示(表・スライド・HTML レポート)を足したカタログの 2 つ。
 // どちらを使うかは、リクエストごとにクライアントの capabilities で決まる。

@@ -2,6 +2,7 @@
 import { createComponentImplementation } from '@a2ui/react'
 import { CommonSchemas } from '@a2ui/web_core/v1_0'
 import { z } from 'zod'
+import { RemoteSelect } from './RemoteSelect.tsx'
 
 const LineItemsApi = {
   name: 'LineItems',
@@ -11,13 +12,17 @@ const LineItemsApi = {
       z.object({
         key: z.string(),
         label: z.string(),
-        type: z.enum(['text', 'number', 'select']),
+        type: z.enum(['text', 'number', 'select', 'lookup']),
         // select の列の選択肢。
         options: z.array(z.object({ value: z.string(), label: z.string() })).optional(),
+        // lookup の列が選択肢を取るツール。
+        source: z.object({ tool: z.string(), params: z.record(z.string()).optional() }).optional(),
       }),
     ),
     // データモデルへのバインド。値が変わると表が描き直され、setValue() でデータモデルを書き換えられる。
     value: CommonSchemas.DynamicValue,
+    // lookup の列が、ツールの引数を取り出す元(フォーム全体の今の値)。
+    context: CommonSchemas.DynamicValue.optional(),
   }),
 }
 
@@ -55,7 +60,15 @@ export const LineItems = createComponentImplementation(LineItemsApi, ({ props })
             <tr key={rowIndex}>
               {columns.map((column) => (
                 <td key={column.key}>
-                  {column.type === 'select' ? (
+                  {column.type === 'lookup' && column.source ? (
+                    <RemoteSelect
+                      label={`${column.label} ${rowIndex + 1}`}
+                      source={column.source}
+                      context={props.context}
+                      value={String(row[column.key] ?? '')}
+                      onChange={(id) => setCell(rowIndex, column.key, id, column.type)}
+                    />
+                  ) : column.type === 'select' ? (
                     <select
                       aria-label={`${column.label} ${rowIndex + 1}`}
                       value={String(row[column.key] ?? '')}

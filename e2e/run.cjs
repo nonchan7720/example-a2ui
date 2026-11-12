@@ -30,7 +30,7 @@ async function open(name) {
   page.on(
     'request',
     (request) =>
-      /\/api\/(chat|approval)$/.test(request.url()) &&
+      /\/api\/(chat|approval|options)$/.test(request.url()) &&
       log(
         `[POST ${new URL(request.url()).pathname}] ${request.postDataJSON().message ?? JSON.stringify(request.postDataJSON().action ?? request.postDataJSON())}`,
       ),
@@ -121,9 +121,13 @@ function lastReservation() {
   const { DatabaseSync } = require('node:sqlite')
   const db = new DatabaseSync(path.join(__dirname, '..', 'server', 'data', 'reservations.db'), { readOnly: true })
   const reservation = db.prepare('SELECT * FROM reservations ORDER BY id DESC LIMIT 1').get()
-  const courses = db.prepare('SELECT course, quantity FROM reservation_courses WHERE reservation_id = ?').all(reservation?.id ?? 0)
+  const items = db
+    .prepare(
+      'SELECT menu_item_id, name, quantity FROM reservation_items JOIN menu_items ON menu_items.id = menu_item_id WHERE reservation_id = ? ORDER BY reservation_items.rowid',
+    )
+    .all(reservation?.id ?? 0)
   db.close()
-  return { reservation, courses }
+  return { reservation, items }
 }
 
 const scenarios = {
@@ -151,14 +155,34 @@ const scenarios = {
     log(`[check] 数量 0 で承認したときの表示: ${(await page.locator('.chat li.error').last().textContent()).replaceAll('\n', ' / ')}`)
     await app.screenshot('approval-rejected')
 
-    // 明細を直す: 1 行目の数量を 3 に、行を追加して同じ店のもう 1 つのコースを 1 つ。
-    const otherCourse = { '月コース 12,000円': '花コース 18,000円', 'おまかせ 15,000円': '鴨鍋コース 9,800円', 'おばんざい膳 4,500円': '季節の会席 7,000円' }
-    const firstCourse = await approval.getByLabel('コース 1').inputValue()
+    // 明細を直す: 1 行目の数量を 3 に戻し、行を追加して、メニューを選択欄から選ぶ。
+    // メニューは店ごとに 24 品あり、選択欄は Claude 経由で MCP のツールを 10 件ずつ呼ぶ(1 ページ数秒)。
     await approval.getByLabel('数量 1').fill('3')
     await approval.getByRole('button', { name: '行を追加' }).click()
-    await approval.getByLabel('コース 2').selectOption(otherCourse[firstCourse] ?? firstCourse)
+    await approval.getByRole('button', { name: 'メニュー 2', exact: true }).click()
+    const list = approval.getByRole('list', { name: 'メニュー 2の選択肢' })
+    const options = list.locator('li button')
+    const waitForOptions = async (count) => {
+      for (let i = 0; i < 300 && (await options.count()) !== count; i++) await page.waitForTimeout(200)
+      if ((await options.count()) !== count) throw new Error(`選択肢が ${count} 件にならない(${await options.count()} 件)`)
+    }
+    await waitForOptions(10)
+    await list.evaluate((element) => element.scrollIntoView({ block: 'end' })) // 選択肢の一覧が画面に入るようにする
+    log('[lookup] 開いた直後: 10 件')
+    await app.screenshot('lookup-open')
+    for (const count of [20, 24]) {
+      await list.evaluate((element) => element.scrollTo({ top: element.scrollHeight })) // 下端までスクロールすると続きを取りに行く
+      await waitForOptions(count)
+      log(`[lookup] 下までスクロール: ${count} 件`)
+    }
+    await app.screenshot('lookup-scrolled')
+    await approval.getByLabel('メニュー 2を検索').pressSequentially('鴨', { delay: 50 })
+    await waitForOptions(4)
+    log(`[lookup] 「鴨」で検索: ${(await options.allTextContents()).join(' / ')}`)
+    await app.screenshot('lookup-search')
+    await options.filter({ hasText: '鴨の土鍋ごはん' }).click()
     await approval.getByLabel('数量 2').fill('1')
-    log(`[edit] コースの事前注文: ${firstCourse} x3, ${otherCourse[firstCourse] ?? firstCourse} x1`)
+    log('[edit] 事前注文: 1 行目の数量を 3 に、2 行目に「鴨の土鍋ごはん」を 1 つ')
     await app.screenshot('approval-edited')
     await approve.click()
     log('[click] 承認して実行')
@@ -166,10 +190,11 @@ const scenarios = {
     await app.screenshot('saved')
 
     // 保存された行を SQLite から直接読む。
-    const { reservation, courses } = lastReservation()
+    const { reservation, items } = lastReservation()
     log(`[sqlite] reservations: ${JSON.stringify(reservation)}`)
-    log(`[sqlite] reservation_courses: ${JSON.stringify(courses)}`)
-    if (reservation?.name !== '山田 花子' || courses.length !== 2) throw new Error('承認フォームで直した内容が保存されていない')
+    log(`[sqlite] reservation_items: ${JSON.stringify(items)}`)
+    if (reservation?.name !== '山田 花子' || items.length !== 2 || items[1].name !== '鴨の土鍋ごはん')
+      throw new Error('承認フォームで直した内容が保存されていない')
     await app.close()
   },
 

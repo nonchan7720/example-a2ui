@@ -4,7 +4,8 @@
 //
 //   文字列・数値         → TextField          真偽値               → CheckBox
 //   enum               → ChoicePicker(選択肢) オブジェクト(ネスト)   → 見出し付きのグループ
-//   オブジェクトの配列(明細) → LineItems(行を追加・削除できる表。enum の列は選択肢)
+//   optionsFrom        → Lookup(別のツールから選択肢を取る。検索と、スクロールでの続きの読み込みができる)
+//   オブジェクトの配列(明細) → LineItems(行を追加・削除できる表。enum や optionsFrom の列は選択肢)
 //
 // ラベルにはスキーマの title を使う(無ければ引数名)。enum の選択肢の表示名は labels(値 → 表示名)。
 // 必須・文字数・数値の範囲は、フォーム上のチェックになる。チェックに通らない間は承認ボタンを押せない。
@@ -16,6 +17,8 @@ export type Schema = {
   items?: Schema
   enum?: string[]
   labels?: Record<string, string>
+  /** 選択肢を返すツールと、その引数に渡すフォームの項目(引数名 → /input 直下の項目名)。 */
+  optionsFrom?: { tool: string; params?: Record<string, string> }
   minLength?: number
   maxLength?: number
   minimum?: number
@@ -71,9 +74,16 @@ export function approvalForm(surfaceId: string, catalogId: string, toolName: str
       const columns = Object.entries(schema.items.properties ?? {}).map(([key, column]) => ({
         key,
         label: column.title ?? key,
-        ...(column.enum ? { type: 'select', options: options(column) } : { type: isNumber(column) ? 'number' : 'text' }),
+        ...(column.optionsFrom
+          ? { type: 'lookup', source: column.optionsFrom }
+          : column.enum
+            ? { type: 'select', options: options(column) }
+            : { type: isNumber(column) ? 'number' : 'text' }),
       }))
-      components.push({ id, component: 'LineItems', label, columns, value })
+      // context: 選択肢のツールに渡す引数を取り出す元。フォーム全体の今の値。
+      components.push({ id, component: 'LineItems', label, columns, value, context: { '@path': '/input' } })
+    } else if (schema.optionsFrom) {
+      components.push({ id, component: 'Lookup', label, source: schema.optionsFrom, value, context: { '@path': '/input' } })
     } else if (schema.enum) {
       components.push({ id, component: 'ChoicePicker', label, variant: 'mutuallyExclusive', options: options(schema), value, displayStyle: 'chips' })
     } else if (schema.type === 'boolean') {

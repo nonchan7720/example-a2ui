@@ -2,10 +2,10 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import type { RendererCapabilities, RendererState } from '@a2ui/agent'
 import { z } from 'zod'
+import { runTurn } from '../agent/claude.ts'
+import { fetchOptions } from '../agent/options.ts'
 import { createProcessor, openA2uiStream } from './a2ui.ts'
 import { approvalForm, coerce, describeIssue, removeApprovalForm, type Schema } from './approval.ts'
-import { runTurn } from './claude.ts'
-import { openReservations } from './reservations.ts'
 
 type ChatRequest = {
   conversationId: string
@@ -25,8 +25,6 @@ const conversations = new Map<string, Conversation>()
 
 /** 回答待ちの承認フォーム。キーは surface の ID。 */
 const pendingApprovals = new Map<string, (answer: ApprovalRequest) => void>()
-
-const reservations = openReservations(process.env.A2UI_CHAT_DB ?? new URL('../data/reservations.db', import.meta.url).pathname)
 
 async function chat(request: ChatRequest, response: ServerResponse) {
   response.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' })
@@ -53,7 +51,6 @@ async function chat(request: ChatRequest, response: ServerResponse) {
       prompt: request.action ? `[a2ui action] ${JSON.stringify(request.action)}` : (request.message ?? ''),
       promptSnippet: processor.promptSnippet,
       resume: conversation.sessionId,
-      reservations,
       onText: (delta) => {
         if (process.env.LOG_RAW) process.stdout.write(delta)
         for (const part of stream.feed(delta)) send('part', part)
@@ -63,7 +60,7 @@ async function chat(request: ChatRequest, response: ServerResponse) {
         send('part', { type: 'tool', name, input })
       },
       // 承認フォームを出し、POST /api/approval で回答が来るまで待つ。
-      approve: async (toolName, schema, input) => {
+      approve: async (toolName, { schema, check }, input) => {
         const formSchema = z.toJSONSchema(schema) as Schema
         const surfaceId = `approval_${crypto.randomUUID().replaceAll('-', '')}`
         sendA2ui(approvalForm(surfaceId, processor.catalogs[0].id, toolName, formSchema, input))
@@ -72,10 +69,12 @@ async function chat(request: ChatRequest, response: ServerResponse) {
             const answer = await new Promise<ApprovalRequest>((resolve) => pendingApprovals.set(surfaceId, resolve))
             if (process.env.LOG_RAW) console.log(`\n[approval] ${JSON.stringify(answer)}`)
             if (!answer.approved) return undefined
-            // 直された値をツールのスキーマで確かめる。正しくなければ理由を返し、フォームは開いたまま次の回答を待つ。
+            // 直された値を確かめる: まずツールのスキーマ(型・必須・範囲)、次にデータに照らした確認(満席、店に無いメニューなど)。
+            // 正しくなければ理由を返し、フォームは開いたまま次の回答を待つ。
             const checked = schema.safeParse(coerce(formSchema, answer.input ?? input))
-            if (checked.success) return checked.data as Record<string, unknown>
-            const reasons = checked.error.issues.map((issue) => describeIssue(formSchema, issue.path, issue.message))
+            const problems = checked.success ? (check?.(checked.data as Record<string, unknown>) ?? []) : checked.error.issues
+            if (checked.success && problems.length === 0) return checked.data as Record<string, unknown>
+            const reasons = problems.map((problem) => describeIssue(formSchema, problem.path, problem.message))
             send('part', { type: 'error', message: `入力を確認してください。\n${reasons.join('\n')}` })
           }
         } finally {
@@ -112,12 +111,19 @@ const server = createServer(async (request, response) => {
       if (!resolve) throw new Error('bad request')
       resolve(body)
       response.writeHead(204).end()
+    } else if (request.method === 'POST' && request.url === '/api/options') {
+      // フォームの選択欄が、選択肢を 1 ページ取りに来る。エージェント層に頼む(agent/options.ts)。
+      const body = await readJson<{ tool: string; args?: Record<string, unknown> }>(request)
+      const started = Date.now()
+      const page = await fetchOptions(body.tool, body.args ?? {})
+      if (process.env.LOG_RAW) console.log(`\n[options] ${body.tool} ${JSON.stringify(body.args)} (${Date.now() - started}ms)`)
+      response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(page))
     } else {
       response.writeHead(404).end()
     }
-  } catch {
-    if (!response.headersSent) response.writeHead(400)
-    response.end()
+  } catch (error) {
+    if (!response.headersSent) response.writeHead(400, { 'Content-Type': 'application/json' })
+    response.end(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }))
   }
 })
 

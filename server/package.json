@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node src/index.ts",
-    "test": "node --test \"src/**/*.test.ts\"",
+    "dev": "node src/app/index.ts",
+    "test": "A2UI_CHAT_DB=:memory: node --test \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

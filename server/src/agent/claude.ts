@@ -1,8 +1,6 @@
 // Claude Agent SDK 側の処理: 1 ターン分の query() を呼び、テキストの差分とツール呼び出しを取り出す。
 import { query } from '@anthropic-ai/claude-agent-sdk'
-import type { z } from 'zod'
-import { APPROVAL_SCHEMAS, createReservationMcp, READ_TOOLS } from './reservation-mcp.ts'
-import type { Reservations } from './reservations.ts'
+import { APPROVALS, type Approval, createReservationMcp, READ_TOOLS } from '../mcp/reservation-mcp.ts'
 
 const ROLE = `You are the assistant inside a chat app that can render UI.
 When a form, a choice or structured data helps the user, reply with a short sentence plus an A2UI surface instead of asking in prose.
@@ -13,7 +11,7 @@ Everything you write outside an <a2ui> block is shown to the user as chat text, 
 ## Restaurant reservations
 You can book restaurants in Kyoto with the reservations tools.
 - When the user wants a reservation, call search_availability first, then show one form whose initial values come from the result: the restaurants as choices (value = restaurant id) with the first one selected, a time that is available, the date and the party size. Ask for the name and phone number in the same form.
-- When the user submits that form, call create_reservation with those values. For courses, pre-fill one line: the restaurant's first course for the whole party. The app then shows the user an approval form with your arguments, which they may edit before approving, so do not ask for confirmation yourself and do not draw a confirmation UI.
+- When the user submits that form, call list_menu_items for the chosen restaurant (one page is enough), then call create_reservation with the form's values and one pre-ordered item: the first menu item, for the whole party. The app then shows the user an approval form with your arguments, where they can change anything and pick other menu items, so do not ask for confirmation yourself and do not draw a confirmation or menu UI.
 - The tool result tells you what was actually saved. Say a reservation is made only after create_reservation returned a reservationId, and show that id and the saved values. If the user declined or it failed, say so and let them change the form.
 
 Reply in the user's language. Apart from the reservations tools you have no tools: never claim to have sent or saved anything else.`
@@ -29,14 +27,13 @@ export type Turn = {
   /** 会話の続きなら、前のターンが返した Agent SDK のセッション ID。 */
   resume?: string
   /** 書き込みをするツールの実行前に呼ばれる。ユーザーが承認したら、(直されたかもしれない)入力を返す。断られたら undefined。 */
-  approve: (toolName: string, schema: z.ZodType, input: Record<string, unknown>) => Promise<Record<string, unknown> | undefined>
-  reservations: Reservations
+  approve: (toolName: string, approval: Approval, input: Record<string, unknown>) => Promise<Record<string, unknown> | undefined>
   onText: (delta: string) => void
   onTool: (name: string, input: unknown) => void
 }
 
 /** 1 ターン実行し、次のターンで resume に渡すセッション ID を返す。 */
-export async function runTurn({ prompt, promptSnippet, resume, approve, reservations, onText, onTool }: Turn): Promise<string> {
+export async function runTurn({ prompt, promptSnippet, resume, approve, onText, onTool }: Turn): Promise<string> {
   let sessionId = resume ?? ''
   const messages = query({
     prompt,
@@ -50,13 +47,13 @@ export async function runTurn({ prompt, promptSnippet, resume, approve, reservat
       settingSources: [],
       strictMcpConfig: true,
       // 使えるのは予約の MCP サーバーだけ。読むだけのツールは常に許可する。
-      mcpServers: { reservations: createReservationMcp(reservations) },
+      mcpServers: { reservations: createReservationMcp() },
       allowedTools: READ_TOOLS,
       // それ以外のツール(予約の保存)はここに来る。入力スキーマから承認フォームを出し、ユーザーが直した入力で実行する。
       canUseTool: async (toolName, input) => {
-        const schema = APPROVAL_SCHEMAS[toolName]
-        if (!schema) return { behavior: 'deny', message: 'This tool is not available.' }
-        const approved = await approve(toolName, schema, input)
+        const approval = APPROVALS[toolName]
+        if (!approval) return { behavior: 'deny', message: 'This tool is not available.' }
+        const approved = await approve(toolName, approval, input)
         return approved ? { behavior: 'allow', updatedInput: approved } : { behavior: 'deny', message: 'The user declined this action.' }
       },
       maxTurns: 6,

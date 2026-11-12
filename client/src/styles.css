@@ -250,3 +250,62 @@ h1 {
   border-radius: 6px;
   cursor: pointer;
 }
+
+/* ツールから選択肢を取る選択欄(src/catalog/RemoteSelect.tsx) */
+.lookup {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0;
+}
+.remote-select {
+  position: relative;
+}
+.remote-select-value {
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #c8cdd3;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.remote-select-popup {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  min-width: 260px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #c8cdd3;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 15%);
+}
+.remote-select-popup ul {
+  max-height: 180px;
+  margin: 6px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.remote-select-popup li button {
+  width: 100%;
+  padding: 7px 8px;
+  font: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.remote-select-popup li button:hover,
+.remote-select-popup li button[aria-pressed="true"] {
+  background: #eef0f3;
+}
+.remote-select-note {
+  padding: 7px 8px;
+  font-size: 12px;
+  color: #59636e;
+}
