@@ -1,0 +1,35 @@
+来週金曜(11/20)の夜、4名で初期設定しました。内容を確認して送信してください。
+
+<a2ui>
+surface("kyoto-washoku-reservation")
+$/form/datetime = "2026-11-20T19:00:00+09:00"
+$/form/people = "4"
+$/form/area = ["any"]
+$/form/style = ["kaiseki"]
+$/form/name = ""
+$/form/phone = ""
+$/form/notes = ""
+
+title = Text("京都の和食 予約フォーム")
+sub = Text("来週金曜・夜・4名で仮入力しています。必要に応じて変更してください。", "caption")
+dt = DateTimeInput($/form/datetime, true, true, null, null, "日時", checks=[?required($/form/datetime, "日時を入力してください")])
+people = TextField("人数", $/form/people, "4", "number", checks=[?required($/form/people, "人数を入力してください"), ?numeric($/form/people, 1, 20, "1〜20名で入力してください")])
+area = ChoicePicker("エリア", "mutuallyExclusive", [{label: "おまかせ", value: "any"}, {label: "祇園・東山", value: "gion"}, {label: "河原町・先斗町", value: "kawaramachi"}, {label: "嵐山", value: "arashiyama"}, {label: "京都駅周辺", value: "station"}], $/form/area, "chips")
+style = ChoicePicker("料理のスタイル", "mutuallyExclusive", [{label: "懐石", value: "kaiseki"}, {label: "割烹・カウンター", value: "kappo"}, {label: "おばんざい", value: "obanzai"}, {label: "湯豆腐・豆腐料理", value: "tofu"}], $/form/style, "chips")
+name = TextField("お名前", $/form/name, "例:山田 太郎", "shortText", checks=[?required($/form/name, "お名前を入力してください")])
+phone = TextField("電話番号", $/form/phone, "090-1234-5678", "shortText", checks=[?required($/form/phone, "電話番号を入力してください"), ?regex($/form/phone, "^[0-9+\\-]{10,15}$", "電話番号の形式を確認してください")])
+notes = TextField("ご要望・アレルギーなど", $/form/notes, "個室希望、アレルギー、記念日など", "longText")
+btnText = Text("この内容で予約リクエストを送る")
+submit = Button(btnText, "primary", Event("submit_reservation", {datetime: $/form/datetime, people: $/form/people, area: $/form/area, style: $/form/style, name: $/form/name, phone: $/form/phone, notes: $/form/notes}))
+form = Column([title, sub, dt, people, area, style, name, phone, notes, submit])
+root = Card(form)
+</a2ui>ご入力ありがとうございます。内容を下の通りまとめました。なお、私にはお店への送信や予約の確定はできないため、これは予約リクエストの控えです。
+
+<a2ui>
+surface("kyoto-washoku-reservation", update=true)
+sumTitle = Text("予約リクエストの内容(未送信・未確定)")
+sumTable = Table("京都和食 予約リクエスト", ["項目", "内容"], [["日時", "2026年11月20日(金) 19:00"], ["人数", "4名"], ["エリア", "祇園・東山"], ["料理", "懐石"], ["お名前", "山田 太郎"], ["電話番号", "090-1234-5678"], ["ご要望", "窓際の席を希望"]])
+sumNote = Text("お店への予約は、お電話か予約サイトでお願いします。この内容をそのまま伝えられます。", "caption")
+sumCol = Column([sumTitle, sumTable, sumNote])
+root = Card(sumCol)
+</a2ui>

@@ -1,0 +1,205 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: #1f2328;
+  background: #f6f7f9;
+}
+main {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.2fr);
+  gap: 16px;
+  height: 100vh;
+  padding: 16px;
+}
+section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #d9dde3;
+  border-radius: 8px;
+}
+h1 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #59636e;
+}
+.chat ol {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.chat li {
+  width: fit-content;
+  max-width: 90%;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #eef0f3;
+  border-radius: 8px;
+}
+.chat li.user {
+  margin-left: auto;
+  color: #fff;
+  background: #2f6feb;
+}
+.chat li.action {
+  margin-left: auto;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  background: #dbe7ff;
+}
+.chat li.error {
+  font-size: 12px;
+  color: #a40e26;
+  background: #ffebe9;
+}
+.chat li.busy {
+  color: #59636e;
+  background: none;
+}
+.chat form {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.chat input {
+  flex: 1;
+  padding: 8px 12px;
+  font: inherit;
+  border: 1px solid #d9dde3;
+  border-radius: 6px;
+}
+.chat form button {
+  padding: 8px 16px;
+  font: inherit;
+  color: #fff;
+  background: #2f6feb;
+  border: 0;
+  border-radius: 6px;
+}
+.chat form button:disabled {
+  opacity: 0.5;
+}
+.surfaces {
+  overflow-y: auto;
+}
+.surface {
+  margin-bottom: 16px;
+}
+.empty {
+  color: #59636e;
+}
+
+/* 資料表示のコンポーネント(src/catalog/) */
+.doc {
+  margin: 8px 0;
+  background: #fff;
+  border: 1px solid #d9dde3;
+  border-radius: 8px;
+}
+.doc figcaption {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #d9dde3;
+}
+.doc figcaption button {
+  margin-left: 6px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  background: #f6f7f9;
+  border: 1px solid #d9dde3;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.doc-scroll {
+  overflow-x: auto;
+}
+.doc table {
+  width: 100%;
+  font-size: 13px;
+  border-collapse: collapse;
+}
+.doc th,
+.doc td {
+  padding: 6px 12px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid #eef0f3;
+}
+.doc th {
+  background: #f6f7f9;
+}
+.doc td.number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.doc iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+}
+.slides {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 12px;
+  list-style: none;
+}
+.slides > li {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  padding: 14px 16px;
+  overflow: hidden;
+  font-size: 11px;
+  background: #fff;
+  border: 1px solid #d9dde3;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
+}
+.slides h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+.slides ul {
+  margin: 0;
+  padding-left: 16px;
+}
+.slides small {
+  position: absolute;
+  right: 8px;
+  bottom: 4px;
+  color: #59636e;
+}
+.doc > img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 12px auto;
+}
+.pdf-pages {
+  display: grid;
+  gap: 12px;
+  max-height: 640px;
+  padding: 12px;
+  overflow-y: auto;
+  color: #59636e;
+  background: #eef0f3;
+}
+.pdf-pages canvas {
+  width: 100%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 15%);
+}

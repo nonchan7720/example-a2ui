@@ -1,0 +1,47 @@
+[POST /api/chat] 来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して
+[fill] "例:山田 太郎 text" <- 山田 太郎
+[fill] "090-1234-5678 text" <- 090-1234-5678
+[fill] "個室希望、アレルギー、記念日など" <- 窓際の席を希望
+[click] 祇園・東山
+[click] この内容で予約リクエストを送る
+[POST /api/chat] [a2ui action] {"name":"submit_reservation","surfaceId":"kyoto-washoku-reservation","context":{"datetime":"2026-11-20T19:00:00+09:00","people":"4","area":["gion"],"style":["kaiseki"],"name":"山田 太郎","phone":"090-1234-5678","notes":"窓際の席を希望"}}
+[chat]
+来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して
+来週金曜(11/20)の夜、4名で初期設定しました。内容を確認して送信してください。
+[a2ui action] {"name":"submit_reservation","surfaceId":"kyoto-washoku-reservation","context":{"datetime":"2026-11-20T19:00:00+09:00","people":"4","area":["gion"],"style":["kaiseki"],"name":"山田 太郎","phone":"090-1234-5678","notes":"窓際の席を希望"}}
+ご入力ありがとうございます。内容を下の通りまとめました。なお、私にはお店への送信や予約の確定はできないため、これは予約リクエストの控えです。次のステップとして、祇園・東山エリアの懐石のお店を探す際のポイントや、お店に電話するときの伝え方の文面もご用意できます。
+[surfaces]
+- heading "A2UI" [level=1]
+- paragraph: 予約リクエストの内容(未送信・未確定)
+- figure "京都和食 予約リクエスト CSV Excel":
+  - strong: 京都和食 予約リクエスト
+  - button "CSV"
+  - button "Excel"
+  - table:
+    - rowgroup:
+      - row "項目 内容":
+        - columnheader "項目"
+        - columnheader "内容"
+    - rowgroup:
+      - row "日時 2026年11月20日(金) 19:00":
+        - cell "日時"
+        - cell "2026年11月20日(金) 19:00"
+      - row "人数 4名":
+        - cell "人数"
+        - cell "4名"
+      - row "エリア 祇園・東山":
+        - cell "エリア"
+        - cell "祇園・東山"
+      - row "料理 懐石":
+        - cell "料理"
+        - cell "懐石"
+      - row "お名前 山田 太郎":
+        - cell "お名前"
+        - cell "山田 太郎"
+      - row "電話番号 090-1234-5678":
+        - cell "電話番号"
+        - cell "090-1234-5678"
+      - row "ご要望 窓際の席を希望":
+        - cell "ご要望"
+        - cell "窓際の席を希望"
+- emphasis: お店への予約は、お電話か予約サイトでお願いします。この内容をそのまま伝えられます。

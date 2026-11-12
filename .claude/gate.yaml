@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nonchan7720/claude-hook-gate/main/scripts/gate.schema.json
+# feedback-gate (https://github.com/nonchan7720/claude-hook-gate) の品質ゲート。
+# 編集の直後に、変更した側の lint・型チェック・単体テストを走らせ、停止時に全体を確かめる。
+# e2e (pnpm e2e) は本物の Claude を呼ぶので、ゲートには入れていない。
+rules:
+  - match:
+      - server/src/**/*.ts
+      - server/package.json
+      - server/tsconfig.json
+    run:
+      - parallel:
+          - name: lint
+            cmd: pnpm lint
+          - name: typecheck-server
+            cmd: pnpm --filter a2ui-chat-server typecheck
+          - name: test-server
+            cmd: pnpm --filter a2ui-chat-server test
+    run_checks:
+      - verify
+  - match:
+      - client/src/**/*.{ts,tsx,css}
+      - client/index.html
+      - client/vite.config.ts
+      - client/package.json
+      - client/tsconfig.json
+    run:
+      - parallel:
+          - name: lint
+            cmd: pnpm lint
+          - name: typecheck-client
+            cmd: pnpm --filter a2ui-chat-client typecheck
+    run_checks:
+      - verify
+  - match:
+      - e2e/**/*.cjs
+      - biome.json
+      - package.json
+      - pnpm-workspace.yaml
+    run:
+      - name: lint
+        cmd: pnpm lint
+    run_checks:
+      - verify
+
+consistency_checks:
+  - name: verify
+    run:
+      - parallel:
+          - name: lint
+            cmd: pnpm lint
+          - name: typecheck
+            cmd: pnpm typecheck
+          - name: test
+            cmd: pnpm test
+      - name: build
+        cmd: pnpm build
