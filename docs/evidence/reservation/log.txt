@@ -1,47 +1,56 @@
 [POST /api/chat] 来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して
 [fill] "例:山田 太郎 text" <- 山田 太郎
-[fill] "090-1234-5678 text" <- 090-1234-5678
-[fill] "個室希望、アレルギー、記念日など" <- 窓際の席を希望
-[click] 祇園・東山
-[click] この内容で予約リクエストを送る
-[POST /api/chat] [a2ui action] {"name":"submit_reservation","surfaceId":"kyoto-washoku-reservation","context":{"datetime":"2026-11-20T19:00:00+09:00","people":"4","area":["gion"],"style":["kaiseki"],"name":"山田 太郎","phone":"090-1234-5678","notes":"窓際の席を希望"}}
+[fill] "例:090-1234-5678 text" <- 090-1234-5678
+[click] 予約する
+[POST /api/chat] {"name":"submit_reservation","surfaceId":"kyoto-reserve-form","context":{"restaurantId":["hanakago"],"date":"2026-11-20T00:00:00Z","time":["19:00"],"partySize":4,"name":"山田 太郎","phone":"090-1234-5678"}}
+[edit] お名前: 山田 太郎 -> 山田 花子
+[edit] コースの事前注文: 月コース 12,000円 x3, 花コース 18,000円 x1
+[POST /api/approval] {"surfaceId":"approval_19f9276e67374579b6550b5ea4770f37","approved":true,"input":{"restaurantId":"hanakago","date":"2026-11-20","time":"19:00","partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":3},{"course":"花コース 18,000円","quantity":1}]}}
+[click] 承認して実行
+[sqlite] reservations: {"id":1,"restaurant_id":"hanakago","date":"2026-11-20","time":"19:00","party_size":4,"name":"山田 花子","phone":"090-1234-5678","notes":"","created_at":"2026-11-12 16:35:07"}
+[sqlite] reservation_courses: [{"course":"月コース 12,000円","quantity":3},{"course":"花コース 18,000円","quantity":1}]
 [chat]
 来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して
-来週金曜(11/20)の夜、4名で初期設定しました。内容を確認して送信してください。
-[a2ui action] {"name":"submit_reservation","surfaceId":"kyoto-washoku-reservation","context":{"datetime":"2026-11-20T19:00:00+09:00","people":"4","area":["gion"],"style":["kaiseki"],"name":"山田 太郎","phone":"090-1234-5678","notes":"窓際の席を希望"}}
-ご入力ありがとうございます。内容を下の通りまとめました。なお、私にはお店への送信や予約の確定はできないため、これは予約リクエストの控えです。次のステップとして、祇園・東山エリアの懐石のお店を探す際のポイントや、お店に電話するときの伝え方の文面もご用意できます。
+🔧 reservations__search_availability {"date":"2026-11-20","partySize":4}
+来週金曜(11月20日)の夜、4名で空いているお店です。お店と時間を選び、お名前と電話番号を入力して送信してください。
+▶ submit_reservation {"restaurantId":["hanakago"],"date":"2026-11-20T00:00:00Z","time":["19:00"],"partySize":4,"name":"山田 太郎","phone":"090-1234-5678"}
+🔧 reservations__create_reservation {"restaurantId":"hanakago","date":"2026-11-20","time":"19:00","partySize":4,"contact":{"name":"山田 太郎","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":4}]}
+▶ 承認 {"restaurantId":"hanakago","date":"2026-11-20","time":"19:00","partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":3},{"course":"花コース 18,000円","quantity":1}]}
+予約が完了しました。予約IDは **1** です。
+
+保存された内容は次のとおりです。
+
+- お店: 花かご(祇園・東山/懐石)
+- 日時: 2026年11月20日(金)19:00
+- 人数: 4名
+- お名前: 山田 花子
+- 電話番号: 090-1234-5678
+- コース: 月コース 12,000円 × 3、花コース 18,000円 × 1
+
+私が送った内容とは2点違います。お名前は「山田 太郎」ではなく「山田 花子」で、コースは月コース4名分ではなく月コース3名と花コース1名です。承認画面で修正された内容がそのまま保存されたようです。意図した内容でしたら、このままで大丈夫です。
 [surfaces]
 - heading "A2UI" [level=1]
-- paragraph: 予約リクエストの内容(未送信・未確定)
-- figure "京都和食 予約リクエスト CSV Excel":
-  - strong: 京都和食 予約リクエスト
-  - button "CSV"
-  - button "Excel"
-  - table:
-    - rowgroup:
-      - row "項目 内容":
-        - columnheader "項目"
-        - columnheader "内容"
-    - rowgroup:
-      - row "日時 2026年11月20日(金) 19:00":
-        - cell "日時"
-        - cell "2026年11月20日(金) 19:00"
-      - row "人数 4名":
-        - cell "人数"
-        - cell "4名"
-      - row "エリア 祇園・東山":
-        - cell "エリア"
-        - cell "祇園・東山"
-      - row "料理 懐石":
-        - cell "料理"
-        - cell "懐石"
-      - row "お名前 山田 太郎":
-        - cell "お名前"
-        - cell "山田 太郎"
-      - row "電話番号 090-1234-5678":
-        - cell "電話番号"
-        - cell "090-1234-5678"
-      - row "ご要望 窓際の席を希望":
-        - cell "ご要望"
-        - cell "窓際の席を希望"
-- emphasis: お店への予約は、お電話か予約サイトでお願いします。この内容をそのまま伝えられます。
+- paragraph: 京都 和食の予約(2026年11月20日 金曜・4名)
+- text: お店
+- radio "花かご(祇園・東山/懐石)" [checked]
+- text: 花かご(祇園・東山/懐石)
+- radio "鴨四季(河原町・先斗町/割烹)"
+- text: 鴨四季(河原町・先斗町/割烹)
+- radio "おばんざい 紬(京都駅周辺/おばんざい)"
+- text: おばんざい 紬(京都駅周辺/おばんざい) 日付
+- textbox: 2026-11-20
+- text: 時間
+- button "17:30"
+- button "18:00"
+- button "18:30"
+- button "19:00" [pressed]
+- button "19:30"
+- button "20:00"
+- text: 人数
+- spinbutton: "4"
+- text: お名前
+- textbox "例:山田 太郎": 山田 太郎
+- text: 電話番号
+- textbox "例:090-1234-5678": 090-1234-5678
+- button "予約する":
+  - paragraph: 予約する

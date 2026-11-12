@@ -56,6 +56,13 @@ h1 {
   font-size: 12px;
   background: #dbe7ff;
 }
+.chat li.tool {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: #59636e;
+  background: #fff;
+  border: 1px dashed #d9dde3;
+}
 .chat li.error {
   font-size: 12px;
   color: #a40e26;
@@ -202,4 +209,43 @@ h1 {
   width: 100%;
   background: #fff;
   box-shadow: 0 1px 3px rgb(0 0 0 / 15%);
+}
+
+/* 明細の表入力(src/catalog/LineItems.tsx) */
+.line-items {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  margin: 4px 0;
+}
+.line-items table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.line-items th {
+  padding: 2px 4px;
+  font-size: 12px;
+  font-weight: normal;
+  color: #59636e;
+  text-align: left;
+}
+.line-items td {
+  padding: 2px 4px 2px 0;
+}
+.line-items input {
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  border: 1px solid #c8cdd3;
+  border-radius: 6px;
+}
+.line-items-button {
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  background: #fff;
+  border: 1px solid #c8cdd3;
+  border-radius: 6px;
+  cursor: pointer;
 }

@@ -27,7 +27,14 @@ async function open(name) {
   }
   page.on('pageerror', (error) => log(`[pageerror] ${error.message}`))
   page.on('console', (message) => message.type() === 'error' && log(`[console.error] ${message.text()}`))
-  page.on('request', (request) => request.url().endsWith('/api/chat') && log(`[POST /api/chat] ${request.postDataJSON().message}`))
+  page.on(
+    'request',
+    (request) =>
+      /\/api\/(chat|approval)$/.test(request.url()) &&
+      log(
+        `[POST ${new URL(request.url()).pathname}] ${request.postDataJSON().message ?? JSON.stringify(request.postDataJSON().action ?? request.postDataJSON())}`,
+      ),
+  )
   await page.goto(url)
 
   let shot = 0
@@ -69,7 +76,7 @@ async function open(name) {
 }
 
 const scenarios = {
-  // フォームを出してもらい、入力して送信し、次の応答を受け取る。
+  // 予約: MCP の空き状況でフォームが作られ、送信すると承認フォームが出る。そこで値を直して承認すると SQLite に保存される。
   async reservation() {
     const app = await open('reservation')
     const { page, log } = app
@@ -82,22 +89,9 @@ const scenarios = {
       const field = fields.nth(i)
       if (await field.inputValue()) continue
       const hint = `${(await field.getAttribute('placeholder')) ?? ''} ${(await field.getAttribute('type')) ?? ''}`
-      const value = /090|電話|tel/i.test(hint)
-        ? '090-1234-5678'
-        : /@|mail/i.test(hint)
-          ? 'taro@example.com'
-          : /山田|太郎/.test(hint)
-            ? '山田 太郎'
-            : '窓際の席を希望'
+      const value = /090|電話|tel/i.test(hint) ? '090-1234-5678' : /山田|太郎|名前/.test(hint) ? '山田 太郎' : '窓際の席を希望'
       await field.pressSequentially(value, { delay: 30 })
       log(`[fill] "${hint.trim()}" <- ${value}`)
-    }
-    for (const chip of ['祇園・東山', '個室']) {
-      const button = page.locator('.surface').getByRole('button', { name: chip, exact: true })
-      if (await button.count()) {
-        await button.first().click()
-        log(`[click] ${chip}`)
-      }
     }
     await app.screenshot('filled')
 
@@ -106,10 +100,45 @@ const scenarios = {
       .getByRole('button')
       .filter({ hasNotText: /キャンセル|クリア|リセット|やめる/ })
       .last()
-    log(`[click] ${await submit.textContent()}`)
+    log(`[click] ${(await submit.textContent()).trim()}`)
     await submit.click()
+
+    // Claude が create_reservation を呼ぶと、実行の前に承認フォームが出る。
+    const approval = page.locator('.surface[data-surface-id^="approval_"]')
+    await approval.waitFor({ timeout: 300_000 })
+    await page.waitForTimeout(1000)
+    await app.screenshot('approval')
+
+    // 承認フォームで、ネストした項目(連絡先のお名前)と明細(コースの事前注文)を直してから承認する。
+    const inputs = approval.locator('input')
+    for (let i = 0; i < (await inputs.count()); i++) {
+      if ((await inputs.nth(i).inputValue()) !== '山田 太郎') continue
+      await inputs.nth(i).fill('')
+      await inputs.nth(i).pressSequentially('山田 花子', { delay: 30 })
+      log('[edit] お名前: 山田 太郎 -> 山田 花子')
+    }
+    // 明細: 1 行目の数量を 3 に減らし、行を追加して、同じ店のもう 1 つのコースを 1 つ入れる。
+    const otherCourse = { '月コース 12,000円': '花コース 18,000円', 'おまかせ 15,000円': '鴨鍋コース 9,800円', 'おばんざい膳 4,500円': '季節の会席 7,000円' }
+    const firstCourse = await approval.getByLabel('コース 1').inputValue()
+    await approval.getByLabel('数量 1').fill('3')
+    await approval.getByRole('button', { name: '行を追加' }).click()
+    await approval.getByLabel('コース 2').pressSequentially(otherCourse[firstCourse] ?? firstCourse, { delay: 20 })
+    await approval.getByLabel('数量 2').fill('1')
+    log(`[edit] コースの事前注文: ${firstCourse} x3, ${otherCourse[firstCourse] ?? firstCourse} x1`)
+    await app.screenshot('approval-edited')
+    await approval.getByRole('button', { name: '承認して実行' }).click()
+    log('[click] 承認して実行')
     await app.idle()
-    await app.screenshot('after-action')
+    await app.screenshot('saved')
+
+    // 保存された行を SQLite から直接読む。
+    const { DatabaseSync } = require('node:sqlite')
+    const db = new DatabaseSync(path.join(__dirname, '..', 'server', 'data', 'reservations.db'), { readOnly: true })
+    const row = db.prepare('SELECT * FROM reservations ORDER BY id DESC LIMIT 1').get()
+    const courses = db.prepare('SELECT course, quantity FROM reservation_courses WHERE reservation_id = ?').all(row?.id ?? 0)
+    log(`[sqlite] reservations: ${JSON.stringify(row)}`)
+    log(`[sqlite] reservation_courses: ${JSON.stringify(courses)}`)
+    if (row?.name !== '山田 花子' || courses.length !== 2) throw new Error('承認フォームで直した内容が保存されていない')
     await app.close()
   },
 

@@ -12,49 +12,75 @@
 | ブラウザ | Playwright 1.63.0 のヘッドレス Chromium(デスクトップ版の Chrome ではない) |
 | 主なパッケージ | `@anthropic-ai/claude-agent-sdk` 0.3.322、`@a2ui/agent` 0.1.0、`@a2ui/web_core` 0.15.0、`@a2ui/react` 0.15.0、`@a2ui/markdown-it` 0.2.2、React 19.3.1、Vite 8.3.8、TypeScript 7.0.2 |
 
-## シナリオ 1: 予約フォーム(reservation)
+## シナリオ 1: 予約(MCP + 承認フォーム + SQLite)
 
-依頼「来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して」を送り、フォームに入力して送信し、次の応答を受け取るまで。
+依頼「来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して」を送り、フォームを送信し、承認フォームで内容を直して承認し、SQLite に保存されるまで。
 
 - 動画: [reservation.webm](evidence/reservation/reservation.webm)
-- 操作ログ: [log.txt](evidence/reservation/log.txt) / Claude の生出力: [claude-output.txt](evidence/reservation/claude-output.txt)
+- 操作ログ: [log.txt](evidence/reservation/log.txt) / Claude の生出力とツール呼び出し: [claude-output.txt](evidence/reservation/claude-output.txt)
 
-| フォームが描画された | 入力した | 送信後、Claude の次の応答 |
+| 1. MCP の空き状況からフォームが作られた | 2. 入力した | 3. 送信すると承認フォームが出た |
 | --- | --- | --- |
-| ![](evidence/reservation/01-form.png) | ![](evidence/reservation/02-filled.png) | ![](evidence/reservation/03-after-action.png) |
+| ![](evidence/reservation/01-form.png) | ![](evidence/reservation/02-filled.png) | ![](evidence/reservation/03-approval.png) |
 
-ボタンを押したときに Claude へ戻ったメッセージ(ブラウザが実際に POST したもの):
+| 4. 承認フォームで名前と明細を直した | 5. 承認後、保存結果が返った |
+| --- | --- |
+| ![](evidence/reservation/04-approval-edited.png) | ![](evidence/reservation/05-saved.png) |
 
-```
-[a2ui action] {"name":"submit_reservation","surfaceId":"kyoto-washoku-reservation","context":{"datetime":"2026-11-20T19:00:00+09:00","people":"4","area":["gion"],"style":["kaiseki"],"name":"山田 太郎","phone":"090-1234-5678","notes":"窓際の席を希望"}}
-```
+起きたことを順に(すべて実際のログから):
 
-### Claude が実際に出力した A2UI Express(1 ターン目)
+1. Claude が MCP ツールを呼んだ。
+
+   ```
+   [tool] mcp__reservations__search_availability {"date":"2026-11-20","partySize":4}
+   ```
+
+2. フォームの送信ボタンを押すと、アクションが Claude に戻った。
+
+   ```
+   [POST /api/chat] {"name":"submit_reservation","surfaceId":"kyoto-reserve-form","context":{"restaurantId":["hanakago"],"date":"2026-11-20T00:00:00Z","time":["19:00"],"partySize":4,"name":"山田 太郎","phone":"090-1234-5678"}}
+   ```
+
+3. Claude が予約の保存ツールを呼んだ。この時点では実行されず、`canUseTool` が承認フォームを出して待つ。
+
+   ```
+   [tool] mcp__reservations__create_reservation {"restaurantId":"hanakago","date":"2026-11-20","time":"19:00","partySize":4,"contact":{"name":"山田 太郎","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":4}]}
+   ```
+
+4. 承認フォームで「お名前」を 山田 太郎 → 山田 花子 に、「コースの事前注文」を 1 行(4 つ)→ 2 行(3 つと 1 つ)に直して承認した。ブラウザが送った回答:
+
+   ```
+   [POST /api/approval] {"surfaceId":"approval_19f9276e67374579b6550b5ea4770f37","approved":true,"input":{"restaurantId":"hanakago","date":"2026-11-20","time":"19:00","partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":3},{"course":"花コース 18,000円","quantity":1}]}}
+   ```
+
+5. 直した値でツールが実行され、SQLite の 2 つのテーブルに保存された(e2e がデータベースを直接読んだ結果)。
+
+   ```
+   [sqlite] reservations: {"id":1,"restaurant_id":"hanakago","date":"2026-11-20","time":"19:00","party_size":4,"name":"山田 花子","phone":"090-1234-5678","notes":"","created_at":"2026-11-12 16:35:07"}
+   [sqlite] reservation_courses: [{"course":"月コース 12,000円","quantity":3},{"course":"花コース 18,000円","quantity":1}]
+   ```
+
+### Claude が実際に出力した A2UI Express(1 ターン目のフォーム)
 
 ```
 <a2ui>
-surface("kyoto-washoku-reservation")
-$/form/datetime = "2026-11-20T19:00:00+09:00"
-$/form/people = "4"
-$/form/area = ["any"]
-$/form/style = ["kaiseki"]
+surface("kyoto-reserve-form")
+$/form/restaurant = ["hanakago"]
+$/form/date = "2026-11-20T00:00:00Z"
+$/form/time = ["19:00"]
+$/form/partySize = 4
 $/form/name = ""
 $/form/phone = ""
-$/form/notes = ""
-
-title = Text("京都の和食 予約フォーム")
-sub = Text("来週金曜・夜・4名で仮入力しています。必要に応じて変更してください。", "caption")
-dt = DateTimeInput($/form/datetime, true, true, null, null, "日時", checks=[?required($/form/datetime, "日時を入力してください")])
-people = TextField("人数", $/form/people, "4", "number", checks=[?required($/form/people, "人数を入力してください"), ?numeric($/form/people, 1, 20, "1〜20名で入力してください")])
-area = ChoicePicker("エリア", "mutuallyExclusive", [{label: "おまかせ", value: "any"}, {label: "祇園・東山", value: "gion"}, {label: "河原町・先斗町", value: "kawaramachi"}, {label: "嵐山", value: "arashiyama"}, {label: "京都駅周辺", value: "station"}], $/form/area, "chips")
-style = ChoicePicker("料理のスタイル", "mutuallyExclusive", [{label: "懐石", value: "kaiseki"}, {label: "割烹・カウンター", value: "kappo"}, {label: "おばんざい", value: "obanzai"}, {label: "湯豆腐・豆腐料理", value: "tofu"}], $/form/style, "chips")
-name = TextField("お名前", $/form/name, "例:山田 太郎", "shortText", checks=[?required($/form/name, "お名前を入力してください")])
-phone = TextField("電話番号", $/form/phone, "090-1234-5678", "shortText", checks=[?required($/form/phone, "電話番号を入力してください"), ?regex($/form/phone, "^[0-9+\\-]{10,15}$", "電話番号の形式を確認してください")])
-notes = TextField("ご要望・アレルギーなど", $/form/notes, "個室希望、アレルギー、記念日など", "longText")
-btnText = Text("この内容で予約リクエストを送る")
-submit = Button(btnText, "primary", Event("submit_reservation", {datetime: $/form/datetime, people: $/form/people, area: $/form/area, style: $/form/style, name: $/form/name, phone: $/form/phone, notes: $/form/notes}))
-form = Column([title, sub, dt, people, area, style, name, phone, notes, submit])
-root = Card(form)
+title = Text("京都 和食の予約(2026年11月20日 金曜・4名)")
+restaurant = ChoicePicker("お店", "mutuallyExclusive", [{label: "花かご(祇園・東山/懐石)", value: "hanakago"}, {label: "鴨四季(河原町・先斗町/割烹)", value: "kamoshiki"}, {label: "おばんざい 紬(京都駅周辺/おばんざい)", value: "obanzai-tsumugi"}], $/form/restaurant)
+date = DateTimeInput($/form/date, true, false, null, null, "日付")
+time = ChoicePicker("時間", "mutuallyExclusive", [{label: "17:30", value: "17:30"}, {label: "18:00", value: "18:00"}, {label: "18:30", value: "18:30"}, {label: "19:00", value: "19:00"}, {label: "19:30", value: "19:30"}, {label: "20:00", value: "20:00"}], $/form/time, "chips")
+party = TextField("人数", $/form/partySize, null, "number")
+name = TextField("お名前", $/form/name, "例:山田 太郎", "shortText", null, [?required("お名前を入力してください")])
+phone = TextField("電話番号", $/form/phone, "例:090-1234-5678", "shortText", null, [?required("電話番号を入力してください")])
+submitText = Text("予約する")
+submit = Button(submitText, "primary", Event("submit_reservation", {restaurantId: $/form/restaurant, date: $/form/date, time: $/form/time, partySize: $/form/partySize, name: $/form/name, phone: $/form/phone}))
+root = Card(Column([title, restaurant, date, time, party, name, phone, submit]))
 </a2ui>
 ```
 
@@ -77,7 +103,9 @@ root = Card(form)
 
 ## 単体テスト(Claude を呼ばない)
 
-`pnpm test` で 6 件すべて成功。[`server/src/a2ui.test.ts`](../server/src/a2ui.test.ts)
+`pnpm test` で 11 件すべて成功。
+
+[`server/src/a2ui.test.ts`](../server/src/a2ui.test.ts):
 
 - 正しい A2UI Express は `a2ui` の part になる
 - **わざと壊した DSL を feed すると `error` の part が返り、後ろの text は読み続ける**
@@ -86,13 +114,27 @@ root = Card(form)
 - state を使い回すと、次のターンで既存の surface を `update=true` で書き換えられる。付けずに同じ ID を使うと拒否される
 - 資料表示のカタログでは `Table` などを書ける。基本カタログだけのクライアントには拒否される
 
+[`server/src/approval.test.ts`](../server/src/approval.test.ts):
+
+- 承認フォームは、ラベル・ネストした項目・明細の表を持ち、レンダラーの state に受け入れられる
+- フォームから返った値は、ネストや明細の中までスキーマの型に合わせられる
+
+[`server/src/reservations.test.ts`](../server/src/reservations.test.ts):
+
+- 予約を保存すると番号が返り、一覧に出る
+- 席が埋まった時刻は空き状況から消え、それ以上は予約できない
+- 存在しない店・時刻・コースは保存しない
+
 ## 確認できたこと(本物の Claude 呼び出し)
 
 - 依頼 → Claude が A2UI Express を出力 → サーバーが検証して SSE で送る → React が描画、の一連の流れ
 - フォームへの入力がデータモデルに入り、ボタンのアクション(`name`、`surfaceId`、`context`)が次のユーザーメッセージとして Claude に戻り、会話が続く
+- Claude が MCP ツール(`search_availability`)の結果からフォームの選択肢と初期値を作る
+- 書き込みをするツール(`create_reservation`)は `canUseTool` で止まり、入力スキーマから作った承認フォームが出る。項目名はスキーマの `title`、ネストした `contact` は見出し付きのグループ、配列の `courses` は行を追加・削除できる表になる
+- 承認フォームで直した値(ネストした項目と明細を含む)が `updatedInput` としてツールに渡り、SQLite に保存される
 - 2 ターン目以降で Agent SDK のセッションが再開されている(Claude が前のターンの内容を踏まえて応答)
-- 会話ごとの A2UI の state が使い回されている(2 ターン目に、1 ターン目のフォームが要約の表示に置き換わった)
-- 組み込みツールが 1 つも渡っていない(`system/init` メッセージの `tools` が空配列)
+- 会話ごとの A2UI の state が使い回されている(サーバーが作った承認フォームも同じ state を通り、承認後に削除される)
+- 組み込みツールが 1 つも渡っていない(MCP を足す前の構成で、`system/init` メッセージの `tools` が空配列であることを見た。MCP を足した後は再確認していない)
 - カスタムカタログの 5 コンポーネントの描画と、CSV / xlsx / pptx / html / pdf / svg / png のダウンロード
 
 ## 未確認のこと
@@ -101,6 +143,9 @@ root = Card(form)
 | --- | --- |
 | `ANTHROPIC_API_KEY` での認証 | この環境にキーが無く、セッションの認証で動かしたため |
 | 本物の Claude が壊れた DSL を出したときの `error` の part | 最終版の実行では Claude が壊れた DSL を出さなかった。単体テストでのみ確認。開発の途中では、Claude が既存の surface ID を作り直そうとして `Surface … already exists.` の `error` の part が画面に出たのを 1 回見ている(その証跡は残していない) |
+| 承認フォームの「キャンセル」 | 通しの確認では承認だけを押した。キャンセル時は `canUseTool` が deny を返す実装だが、実呼び出しでは動かしていない |
+| 承認フォームの対応範囲 | 文字列・数値・真偽値・ネストしたオブジェクト・オブジェクトの配列のみ。enum の選択肢、文字列の配列、配列の中の配列、入力チェック(必須・範囲)は未実装。たとえば「店」は ID の文字列をそのまま編集する |
+| 外部プロセスの MCP サーバー(stdio / HTTP) | 予約の MCP サーバーは Agent SDK と同じプロセスの中で動く(`createSdkMcpServer`)。外部サーバーをつなぐ形は試していない |
 | xlsx / pptx を Excel / PowerPoint で開くこと | この環境に Office が無い。zip の構造と中の文字列を確かめたところまで |
 | デスクトップ版の Chrome での表示 | ヘッドレスの Chromium でのみ実行した |
 | feedback-gate のフックから `gate.yaml` が実際に走ること | スキーマ(`scripts/gate.schema.json`)での検証と、書いたコマンドを 1 つずつ手で実行して成功するところまで |
@@ -117,7 +162,9 @@ root = Card(form)
 4. **state を使い回すと、同じ surface ID の作り直しが拒否される。** `surface("id")` + `root = …` は `createSurface` にコンパイルされ、すでにある ID だと `Surface … already exists.` になる。既存の surface を書き換える構文 `surface("id", update=true)` はコンパイラにあるが、`promptSnippet` には説明が無い。サーバーのプロンプト(`server/src/claude.ts`)に説明を足した。
 5. **Icon はフォントが無いと文字で出る。** 基本カタログの `Icon` は Material Icons のフォント名を指定するだけで、フォント自体は読み込まない。`material-icons` パッケージを足した。
 6. **`basicCatalog` に React のコンポーネントを足すには `new Catalog<ReactCatalogComponent>(…)` が要る。** `basicCatalog.derive()` は型が Web Component 用で、React 実装を渡せない。
-7. **`pdf-lib` で `subset: true` にすると Noto Sans JP の文字の大半が欠ける。** フォント全体を埋め込んでいる。
+7. **コンポーネントの ID は識別子でなければならない。** `field-name` のようにハイフンを含む ID は `must be a valid UAX #31 identifier` で拒否される。
+8. **サーバーが自分で作った A2UI メッセージは `RendererState.apply()` に通せる。** Claude の出力と同じ state で検証・記録されるので、承認フォームのようにサーバーが直接出す UI も整合が保てる。
+9. **`pdf-lib` で `subset: true` にすると Noto Sans JP の文字の大半が欠ける。** フォント全体を埋め込んでいる。
 
 ## モデルによる違い
 

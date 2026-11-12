@@ -1,4 +1,4 @@
-// 基本カタログに、資料を表示する 5 つのコンポーネントを足したカタログ文書を作る。
+// 基本カタログに、資料を表示する 5 つのコンポーネントと、明細の表入力(LineItems)を足したカタログ文書を作る。
 // クライアント側の実装は client/src/catalog/ にあり、名前とプロパティをここと揃える。
 export const DOCUMENT_CATALOG_ID = 'https://example.com/a2ui-chat/catalogs/documents/v1/catalog.json'
 
@@ -76,6 +76,29 @@ const components = {
     },
     required: ['component', 'title', 'sections'],
   },
+  LineItems: {
+    type: 'object',
+    description: 'An editable table of line items bound to an array of objects in the data model. The user can edit cells and add or remove rows.',
+    properties: {
+      component: { const: 'LineItems' },
+      label: text('Label shown above the table.'),
+      columns: {
+        type: 'array',
+        description: 'The columns, in order.',
+        items: {
+          type: 'object',
+          properties: {
+            key: text('Property name of the row object that this column edits.'),
+            label: text('Column header.'),
+            type: { type: 'string', enum: ['text', 'number'], description: 'Input type of the cells.' },
+          },
+          required: ['key', 'label', 'type'],
+        },
+      },
+      value: { $ref: 'common_types.json#/$defs/DynamicValue', description: 'Data binding to the array of row objects, e.g. $/form/items.' },
+    },
+    required: ['component', 'label', 'columns', 'value'],
+  },
   SvgImage: {
     type: 'object',
     description: 'An image that you draw yourself as SVG (illustration, diagram, chart, logo). The user can download it as SVG or PNG.',
@@ -97,7 +120,8 @@ const instructions = `## Document components
 - HtmlReport: a long-form report as HTML. The user can download it as .html.
 - PdfDocument: a text document (letter, minutes, contract draft, summary) rendered as a real PDF. The user can download it as .pdf.
 - SvgImage: an image you draw as SVG. The user can download it as SVG or PNG. You cannot generate photos; say so if asked for one.
-These five take literal values only (no data bindings) and can be placed inside Column, Card or Tabs like any other component.`
+- LineItems: an editable table for a list of items (order lines, attendees). Bind its value to an array in the data model.
+The five document components take literal values only (no data bindings) and can be placed inside Column, Card or Tabs like any other component.`
 
 type CatalogDocument = {
   components: Record<string, unknown>
