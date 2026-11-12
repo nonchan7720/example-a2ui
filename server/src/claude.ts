@@ -1,5 +1,6 @@
 // Claude Agent SDK 側の処理: 1 ターン分の query() を呼び、テキストの差分とツール呼び出しを取り出す。
 import { query } from '@anthropic-ai/claude-agent-sdk'
+import type { z } from 'zod'
 import { APPROVAL_SCHEMAS, createReservationMcp, READ_TOOLS } from './reservation-mcp.ts'
 import type { Reservations } from './reservations.ts'
 
@@ -28,7 +29,7 @@ export type Turn = {
   /** 会話の続きなら、前のターンが返した Agent SDK のセッション ID。 */
   resume?: string
   /** 書き込みをするツールの実行前に呼ばれる。ユーザーが承認したら、(直されたかもしれない)入力を返す。断られたら undefined。 */
-  approve: (toolName: string, schema: unknown, input: Record<string, unknown>) => Promise<Record<string, unknown> | undefined>
+  approve: (toolName: string, schema: z.ZodType, input: Record<string, unknown>) => Promise<Record<string, unknown> | undefined>
   reservations: Reservations
   onText: (delta: string) => void
   onTool: (name: string, input: unknown) => void

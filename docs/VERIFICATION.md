@@ -23,9 +23,13 @@
 | --- | --- | --- |
 | ![](evidence/reservation/01-form.png) | ![](evidence/reservation/02-filled.png) | ![](evidence/reservation/03-approval.png) |
 
-| 4. 承認フォームで名前と明細を直した | 5. 承認後、保存結果が返った |
+| 4. お名前を空にすると承認ボタンが押せない | 5. 数量 0 で承認すると理由が出て、フォームは開いたまま |
 | --- | --- |
-| ![](evidence/reservation/04-approval-edited.png) | ![](evidence/reservation/05-saved.png) |
+| ![](evidence/reservation/04-approval-name-empty.png) | ![](evidence/reservation/05-approval-rejected.png) |
+
+| 6. 名前と明細を直した | 7. 承認後、保存結果が返った |
+| --- | --- |
+| ![](evidence/reservation/06-approval-edited.png) | ![](evidence/reservation/07-saved.png) |
 
 起きたことを順に(すべて実際のログから):
 
@@ -38,7 +42,7 @@
 2. フォームの送信ボタンを押すと、アクションが Claude に戻った。
 
    ```
-   [POST /api/chat] {"name":"submit_reservation","surfaceId":"kyoto-reserve-form","context":{"restaurantId":["hanakago"],"date":"2026-11-20T00:00:00Z","time":["19:00"],"partySize":4,"name":"山田 太郎","phone":"090-1234-5678"}}
+   [POST /api/chat] {"name":"submit_reservation","surfaceId":"reservation-form","context":{"restaurantId":["hanakago"],"date":"2026-11-20T00:00:00Z","time":["19:00"],"partySize":4,"name":"山田 太郎","phone":"090-1234-5678"}}
    ```
 
 3. Claude が予約の保存ツールを呼んだ。この時点では実行されず、`canUseTool` が承認フォームを出して待つ。
@@ -47,16 +51,27 @@
    [tool] mcp__reservations__create_reservation {"restaurantId":"hanakago","date":"2026-11-20","time":"19:00","partySize":4,"contact":{"name":"山田 太郎","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":4}]}
    ```
 
-4. 承認フォームで「お名前」を 山田 太郎 → 山田 花子 に、「コースの事前注文」を 1 行(4 つ)→ 2 行(3 つと 1 つ)に直して承認した。ブラウザが送った回答:
+4. 承認フォームは入力スキーマから作られた。「店」「時間」は名前で選ぶ選択肢、「連絡先」はグループ、「コースの事前注文」は表で、コースの列は選択肢。
+
+5. 入力チェックを 2 通り確かめた。
 
    ```
-   [POST /api/approval] {"surfaceId":"approval_19f9276e67374579b6550b5ea4770f37","approved":true,"input":{"restaurantId":"hanakago","date":"2026-11-20","time":"19:00","partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":3},{"course":"花コース 18,000円","quantity":1}]}}
+   [check] お名前が空のとき、承認ボタンは押せない: true
+   [check] 数量 0 で承認したときの表示: 入力を確認してください。 / コースの事前注文 1 行目 数量: 小さすぎる値: numberは1以上である必要があります
    ```
 
-5. 直した値でツールが実行され、SQLite の 2 つのテーブルに保存された(e2e がデータベースを直接読んだ結果)。
+   1 つ目はフォーム上のチェック(A2UI の checks)、2 つ目は承認時にサーバーがツールのスキーマ(zod)で確かめた結果。
+
+6. 「お名前」を 山田 太郎 → 山田 花子 に、「コースの事前注文」を 1 行(4 つ)→ 2 行(3 つと 1 つ)に直して承認した。ブラウザが送った回答:
 
    ```
-   [sqlite] reservations: {"id":1,"restaurant_id":"hanakago","date":"2026-11-20","time":"19:00","party_size":4,"name":"山田 花子","phone":"090-1234-5678","notes":"","created_at":"2026-11-12 16:35:07"}
+   [POST /api/approval] {"surfaceId":"approval_adfffbaa515a442ea6ddba07ffbb86ac","approved":true,"input":{"restaurantId":["hanakago"],"date":"2026-11-20","time":["19:00"],"partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":3},{"course":"花コース 18,000円","quantity":1}],"notes":""}}
+   ```
+
+7. 直した値でツールが実行され、SQLite の 2 つのテーブルに保存された(e2e がデータベースを直接読んだ結果)。
+
+   ```
+   [sqlite] reservations: {"id":1,"restaurant_id":"hanakago","date":"2026-11-20","time":"19:00","party_size":4,"name":"山田 花子","phone":"090-1234-5678","notes":"","created_at":"2026-11-12 16:45:52"}
    [sqlite] reservation_courses: [{"course":"月コース 12,000円","quantity":3},{"course":"花コース 18,000円","quantity":1}]
    ```
 
@@ -64,24 +79,41 @@
 
 ```
 <a2ui>
-surface("kyoto-reserve-form")
+surface("reservation-form")
 $/form/restaurant = ["hanakago"]
 $/form/date = "2026-11-20T00:00:00Z"
 $/form/time = ["19:00"]
 $/form/partySize = 4
 $/form/name = ""
 $/form/phone = ""
-title = Text("京都 和食の予約(2026年11月20日 金曜・4名)")
+title = Text("**京都 和食の予約**")
 restaurant = ChoicePicker("お店", "mutuallyExclusive", [{label: "花かご(祇園・東山/懐石)", value: "hanakago"}, {label: "鴨四季(河原町・先斗町/割烹)", value: "kamoshiki"}, {label: "おばんざい 紬(京都駅周辺/おばんざい)", value: "obanzai-tsumugi"}], $/form/restaurant)
 date = DateTimeInput($/form/date, true, false, null, null, "日付")
 time = ChoicePicker("時間", "mutuallyExclusive", [{label: "17:30", value: "17:30"}, {label: "18:00", value: "18:00"}, {label: "18:30", value: "18:30"}, {label: "19:00", value: "19:00"}, {label: "19:30", value: "19:30"}, {label: "20:00", value: "20:00"}], $/form/time, "chips")
 party = TextField("人数", $/form/partySize, null, "number")
-name = TextField("お名前", $/form/name, "例:山田 太郎", "shortText", null, [?required("お名前を入力してください")])
-phone = TextField("電話番号", $/form/phone, "例:090-1234-5678", "shortText", null, [?required("電話番号を入力してください")])
-submitText = Text("予約する")
-submit = Button(submitText, "primary", Event("submit_reservation", {restaurantId: $/form/restaurant, date: $/form/date, time: $/form/time, partySize: $/form/partySize, name: $/form/name, phone: $/form/phone}))
-root = Card(Column([title, restaurant, date, time, party, name, phone, submit]))
+name = TextField("お名前", $/form/name, "例:山田 花子", "shortText", null, [?required("お名前を入力してください")])
+phone = TextField("電話番号", $/form/phone, "例:09012345678", "shortText", null, [?required("電話番号を入力してください"), ?length(10, 15, "10〜15文字で入力してください")])
+submitLabel = Text("予約する")
+submit = Button(submitLabel, "primary", Event("submit_reservation", {restaurantId: $/form/restaurant, date: $/form/date, time: $/form/time, partySize: $/form/partySize, name: $/form/name, phone: $/form/phone}))
+form = Column([title, restaurant, date, time, party, name, phone, submit])
+root = Card(form)
+(node:15383) [CLAUDE_SDK_CAN_USE_TOOL_SHADOWED] Warning: canUseTool will not be invoked for: mcp__reservations__search_availability, mcp__reservations__list_reservations. Bare allowedTools entries auto-approve the whole tool before the callback is consulted. To gate every tool call, use a PreToolUse hook; or remove the bare names from allowedTools so they fall through to canUseTool. Allow rules from settings files can also shadow the callback but are not visible here.
 </a2ui>
+```
+
+## シナリオ 1b: 承認フォームでキャンセル(cancel)
+
+同じ流れで承認フォームまで進め、「キャンセル」を押した。ツールは実行されず、予約は増えなかった。
+
+- 動画: [cancel.webm](evidence/cancel/cancel.webm) / 操作ログ: [log.txt](evidence/cancel/log.txt)
+
+| 承認フォーム | キャンセル後 |
+| --- | --- |
+| ![](evidence/cancel/03-approval.png) | ![](evidence/cancel/04-cancelled.png) |
+
+```
+[POST /api/approval] {"surfaceId":"approval_aa31f1fe657748a9953c0d6d845d1c97","approved":false}
+[sqlite] 最後の予約番号: キャンセル前 1 / キャンセル後 1
 ```
 
 ## シナリオ 2: 資料の表示(documents)
@@ -103,7 +135,7 @@ root = Card(Column([title, restaurant, date, time, party, name, phone, submit]))
 
 ## 単体テスト(Claude を呼ばない)
 
-`pnpm test` で 11 件すべて成功。
+`pnpm test` で 12 件すべて成功。
 
 [`server/src/a2ui.test.ts`](../server/src/a2ui.test.ts):
 
@@ -116,8 +148,9 @@ root = Card(Column([title, restaurant, date, time, party, name, phone, submit]))
 
 [`server/src/approval.test.ts`](../server/src/approval.test.ts):
 
-- 承認フォームは、ラベル・ネストした項目・明細の表を持ち、レンダラーの state に受け入れられる
+- 承認フォームは、ラベル・選択肢・入力チェック・ネストした項目・明細の表を持ち、レンダラーの state に受け入れられる
 - フォームから返った値は、ネストや明細の中までスキーマの型に合わせられる
+- 直された値が正しくなければ、どこが違うかをフォームのラベルで言える
 
 [`server/src/reservations.test.ts`](../server/src/reservations.test.ts):
 
@@ -130,7 +163,9 @@ root = Card(Column([title, restaurant, date, time, party, name, phone, submit]))
 - 依頼 → Claude が A2UI Express を出力 → サーバーが検証して SSE で送る → React が描画、の一連の流れ
 - フォームへの入力がデータモデルに入り、ボタンのアクション(`name`、`surfaceId`、`context`)が次のユーザーメッセージとして Claude に戻り、会話が続く
 - Claude が MCP ツール(`search_availability`)の結果からフォームの選択肢と初期値を作る
-- 書き込みをするツール(`create_reservation`)は `canUseTool` で止まり、入力スキーマから作った承認フォームが出る。項目名はスキーマの `title`、ネストした `contact` は見出し付きのグループ、配列の `courses` は行を追加・削除できる表になる
+- 書き込みをするツール(`create_reservation`)は `canUseTool` で止まり、入力スキーマから作った承認フォームが出る。項目名はスキーマの `title`、enum は表示名で選ぶ選択肢、ネストした `contact` は見出し付きのグループ、配列の `courses` は行を追加・削除できる表になる
+- 入力チェック: 必須の欄を空にすると承認ボタンが押せない。明細の数量を 0 にして承認すると、サーバーが理由をラベル付きで返し、フォームは開いたまま直せる
+- 承認フォームで「キャンセル」を押すと、ツールは実行されず、何も保存されない
 - 承認フォームで直した値(ネストした項目と明細を含む)が `updatedInput` としてツールに渡り、SQLite に保存される
 - 2 ターン目以降で Agent SDK のセッションが再開されている(Claude が前のターンの内容を踏まえて応答)
 - 会話ごとの A2UI の state が使い回されている(サーバーが作った承認フォームも同じ state を通り、承認後に削除される)
@@ -143,8 +178,8 @@ root = Card(Column([title, restaurant, date, time, party, name, phone, submit]))
 | --- | --- |
 | `ANTHROPIC_API_KEY` での認証 | この環境にキーが無く、セッションの認証で動かしたため |
 | 本物の Claude が壊れた DSL を出したときの `error` の part | 最終版の実行では Claude が壊れた DSL を出さなかった。単体テストでのみ確認。開発の途中では、Claude が既存の surface ID を作り直そうとして `Surface … already exists.` の `error` の part が画面に出たのを 1 回見ている(その証跡は残していない) |
-| 承認フォームの「キャンセル」 | 通しの確認では承認だけを押した。キャンセル時は `canUseTool` が deny を返す実装だが、実呼び出しでは動かしていない |
-| 承認フォームの対応範囲 | 文字列・数値・真偽値・ネストしたオブジェクト・オブジェクトの配列のみ。enum の選択肢、文字列の配列、配列の中の配列、入力チェック(必須・範囲)は未実装。たとえば「店」は ID の文字列をそのまま編集する |
+| 承認フォームの対応範囲 | 文字列・数値・真偽値・enum・ネストしたオブジェクト・オブジェクトの配列まで。文字列の配列、配列の中の配列、項目どうしの依存(店を変えたらコースの選択肢を絞る、など)は未実装。店に合わないコースを選んだ場合は、ツールがエラーを返し、Claude がそれを伝える(この経路は実呼び出しでは動かしていない) |
+| 明細の行ごとのフォーム上のチェック | 明細の中の値は、承認を押した後にサーバーが確かめる。押す前に行の中で赤く表示する作りにはしていない |
 | 外部プロセスの MCP サーバー(stdio / HTTP) | 予約の MCP サーバーは Agent SDK と同じプロセスの中で動く(`createSdkMcpServer`)。外部サーバーをつなぐ形は試していない |
 | xlsx / pptx を Excel / PowerPoint で開くこと | この環境に Office が無い。zip の構造と中の文字列を確かめたところまで |
 | デスクトップ版の Chrome での表示 | ヘッドレスの Chromium でのみ実行した |

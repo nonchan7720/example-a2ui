@@ -90,7 +90,12 @@ const components = {
           properties: {
             key: text('Property name of the row object that this column edits.'),
             label: text('Column header.'),
-            type: { type: 'string', enum: ['text', 'number'], description: 'Input type of the cells.' },
+            type: { type: 'string', enum: ['text', 'number', 'select'], description: 'Input type of the cells.' },
+            options: {
+              type: 'array',
+              description: 'The choices of a select column.',
+              items: { type: 'object', properties: { value: text('Stored value.'), label: text('Shown text.') }, required: ['value', 'label'] },
+            },
           },
           required: ['key', 'label', 'type'],
         },

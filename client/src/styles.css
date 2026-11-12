@@ -232,7 +232,8 @@ h1 {
 .line-items td {
   padding: 2px 4px 2px 0;
 }
-.line-items input {
+.line-items input,
+.line-items select {
   width: 100%;
   padding: 8px 10px;
   font: inherit;

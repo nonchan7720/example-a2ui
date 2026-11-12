@@ -6,7 +6,7 @@ Claude Agent SDK(TypeScript)と [A2UI](https://github.com/a2ui-project/a2ui) v1.
 
 予約の例では、Claude が MCP ツールで空き状況を調べてフォームを作り、予約を保存するツールを呼ぶと、実行の前に**承認フォーム**が出ます。ユーザーは値を直してから承認でき、直した値で SQLite に保存されます。
 
-![承認フォーム](docs/evidence/reservation/04-approval-edited.png)
+![承認フォーム](docs/evidence/reservation/06-approval-edited.png)
 
 実際に動かした結果(動画・スクリーンショット・Claude の生出力・確認できたこと/未確認のこと)は [docs/VERIFICATION.md](docs/VERIFICATION.md) にあります。
 
@@ -39,7 +39,7 @@ pnpm dev                       # server (http://127.0.0.1:8787) と client (http
 | `pnpm dev` | server と client を起動 |
 | `pnpm test` | 単体テスト(壊れた DSL が error の part になること、承認フォームの組み立て、予約の保存など。Claude は呼ばない) |
 | `pnpm typecheck` / `pnpm lint` / `pnpm build` | 型チェック / Biome / client のビルド |
-| `pnpm e2e [reservation\|documents]` | 起動中のアプリをヘッドレスの Chromium で操作し、動画・スクリーンショット・ダウンロードしたファイルを `docs/evidence/` に残す(本物の Claude を呼ぶ) |
+| `pnpm e2e [reservation\|cancel\|documents]` | 起動中のアプリをヘッドレスの Chromium で操作し、動画・スクリーンショット・ダウンロードしたファイルを `docs/evidence/` に残す(本物の Claude を呼ぶ) |
 
 `.claude/gate.yaml` は [feedback-gate](https://github.com/nonchan7720/claude-hook-gate) 用の品質ゲートです。編集の直後に変更した側の lint・型チェック・単体テストを、停止時に全体(lint・typecheck・test・build)を走らせます。
 
@@ -87,7 +87,8 @@ server と client は `package.json` を分けています。Claude Agent SDK �
 
 1. `canUseTool` が呼ばれ、server がツールの入力スキーマ(JSON Schema)と Claude が渡そうとした入力から、承認フォームの A2UI メッセージを組み立てて SSE で送る(`server/src/approval.ts`)。Claude はこのフォームを書かない。
 2. ユーザーがフォームの値を直して「承認して実行」を押すと、client がその時点の値を `POST /api/approval` で送る。
-3. 待っていた `canUseTool` が、直された値を `updatedInput` として返し、ツールがその値で実行される。「キャンセル」なら deny を返す。
+3. server が、直された値をツールのスキーマ(zod)で確かめる。正しくなければ、どこが違うかをラベル付きで返し、フォームは開いたまま次の回答を待つ。
+4. 正しければ、待っていた `canUseTool` がその値を `updatedInput` として返し、ツールがその値で実行される。「キャンセル」なら deny を返す。
 
 フォームの作り方はスキーマで決まります。
 
@@ -95,10 +96,14 @@ server と client は `package.json` を分けています。Claude Agent SDK �
 | --- | --- |
 | `title` | 項目のラベル(無ければ引数名)。ツール全体の `title` はフォームの題 |
 | 文字列・数値 / 真偽値 | `TextField` / `CheckBox` |
+| enum | 選択肢(`ChoicePicker`)。表示名は `labels`(値 → 表示名) |
+| 必須、`min` / `max`、文字数 | フォーム上のチェック。通らない間は承認ボタンを押せない |
 | オブジェクト(ネスト) | 見出し付きのグループ。中の項目も同じ規則で作る |
-| オブジェクトの配列(明細) | `LineItems`: セルを編集でき、行を追加・削除できる表 |
+| オブジェクトの配列(明細) | `LineItems`: セルを編集でき、行を追加・削除できる表。enum の列は選択肢 |
 
-ラベルは zod の `.meta({ title: 'お名前' })` で付けます。承認フォームを出すツールを増やすときは、`reservation-mcp.ts` の `APPROVAL_SCHEMAS` にツール名とスキーマを足します。enum の選択肢や入力チェック(必須・範囲)にはまだ対応していません。
+ラベルは zod の `.meta({ title: 'お名前' })` で、選択肢の表示名は `.meta({ labels: { hanakago: '花かご' } })` で付けます。承認フォームを出すツールを増やすときは、`reservation-mcp.ts` の `APPROVAL_SCHEMAS` にツール名と zod のスキーマを足します。
+
+チェックは 2 段です。フォーム上のチェックはすぐに反応しますが、明細の中や項目どうしの関係までは見ません。最終的な判定は、承認時にサーバーがツールと同じスキーマで行います。
 
 ### 資料表示のコンポーネント
 

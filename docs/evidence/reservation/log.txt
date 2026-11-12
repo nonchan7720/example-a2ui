@@ -1,36 +1,46 @@
 [POST /api/chat] 来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して
-[fill] "例:山田 太郎 text" <- 山田 太郎
-[fill] "例:090-1234-5678 text" <- 090-1234-5678
+[fill] "例:山田 花子 text" <- 山田 太郎
+[fill] "例:09012345678 text" <- 090-1234-5678
 [click] 予約する
-[POST /api/chat] {"name":"submit_reservation","surfaceId":"kyoto-reserve-form","context":{"restaurantId":["hanakago"],"date":"2026-11-20T00:00:00Z","time":["19:00"],"partySize":4,"name":"山田 太郎","phone":"090-1234-5678"}}
-[edit] お名前: 山田 太郎 -> 山田 花子
+[POST /api/chat] {"name":"submit_reservation","surfaceId":"reservation-form","context":{"restaurantId":["hanakago"],"date":"2026-11-20T00:00:00Z","time":["19:00"],"partySize":4,"name":"山田 太郎","phone":"090-1234-5678"}}
+[check] お名前が空のとき、承認ボタンは押せない: true
+[edit] お名前: 山田 太郎 -> 山田 花子(承認ボタンは押せる: true)
+[POST /api/approval] {"surfaceId":"approval_adfffbaa515a442ea6ddba07ffbb86ac","approved":true,"input":{"restaurantId":["hanakago"],"date":"2026-11-20","time":["19:00"],"partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":0}],"notes":""}}
+[check] 数量 0 で承認したときの表示: 入力を確認してください。 / コースの事前注文 1 行目 数量: 小さすぎる値: numberは1以上である必要があります
 [edit] コースの事前注文: 月コース 12,000円 x3, 花コース 18,000円 x1
-[POST /api/approval] {"surfaceId":"approval_19f9276e67374579b6550b5ea4770f37","approved":true,"input":{"restaurantId":"hanakago","date":"2026-11-20","time":"19:00","partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":3},{"course":"花コース 18,000円","quantity":1}]}}
+[POST /api/approval] {"surfaceId":"approval_adfffbaa515a442ea6ddba07ffbb86ac","approved":true,"input":{"restaurantId":["hanakago"],"date":"2026-11-20","time":["19:00"],"partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":3},{"course":"花コース 18,000円","quantity":1}],"notes":""}}
 [click] 承認して実行
-[sqlite] reservations: {"id":1,"restaurant_id":"hanakago","date":"2026-11-20","time":"19:00","party_size":4,"name":"山田 花子","phone":"090-1234-5678","notes":"","created_at":"2026-11-12 16:35:07"}
+[sqlite] reservations: {"id":1,"restaurant_id":"hanakago","date":"2026-11-20","time":"19:00","party_size":4,"name":"山田 花子","phone":"090-1234-5678","notes":"","created_at":"2026-11-12 16:45:52"}
 [sqlite] reservation_courses: [{"course":"月コース 12,000円","quantity":3},{"course":"花コース 18,000円","quantity":1}]
 [chat]
 来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して
 🔧 reservations__search_availability {"date":"2026-11-20","partySize":4}
-来週金曜(11月20日)の夜、4名で空いているお店です。お店と時間を選び、お名前と電話番号を入力して送信してください。
+来週金曜(2026年11月20日)の4名で空きを確認しました。3店とも空いています。内容を確認して、お名前と電話番号を入力してください。
 ▶ submit_reservation {"restaurantId":["hanakago"],"date":"2026-11-20T00:00:00Z","time":["19:00"],"partySize":4,"name":"山田 太郎","phone":"090-1234-5678"}
 🔧 reservations__create_reservation {"restaurantId":"hanakago","date":"2026-11-20","time":"19:00","partySize":4,"contact":{"name":"山田 太郎","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":4}]}
-▶ 承認 {"restaurantId":"hanakago","date":"2026-11-20","time":"19:00","partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":3},{"course":"花コース 18,000円","quantity":1}]}
+▶ 承認 {"restaurantId":["hanakago"],"date":"2026-11-20","time":["19:00"],"partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":0}],"notes":""}
+入力を確認してください。
+コースの事前注文 1 行目 数量: 小さすぎる値: numberは1以上である必要があります
+▶ 承認 {"restaurantId":["hanakago"],"date":"2026-11-20","time":["19:00"],"partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":3},{"course":"花コース 18,000円","quantity":1}],"notes":""}
 予約が完了しました。予約IDは **1** です。
 
 保存された内容は次のとおりです。
 
-- お店: 花かご(祇園・東山/懐石)
-- 日時: 2026年11月20日(金)19:00
-- 人数: 4名
-- お名前: 山田 花子
-- 電話番号: 090-1234-5678
-- コース: 月コース 12,000円 × 3、花コース 18,000円 × 1
+| 項目 | 内容 |
+|---|---|
+| お店 | 花かご(祇園・東山/懐石) |
+| 日付 | 2026年11月20日(金) |
+| 時間 | 19:00 |
+| 人数 | 4名 |
+| お名前 | 山田 花子 |
+| 電話番号 | 090-1234-5678 |
+| コース | 月コース 12,000円 × 3、花コース 18,000円 × 1 |
 
-私が送った内容とは2点違います。お名前は「山田 太郎」ではなく「山田 花子」で、コースは月コース4名分ではなく月コース3名と花コース1名です。承認画面で修正された内容がそのまま保存されたようです。意図した内容でしたら、このままで大丈夫です。
+フォームでは「山田 太郎」、コースは「月コース × 4」で送信しました。承認時に、お名前は「山田 花子」に、コースは「月コース × 3 と 花コース × 1」に変更されています。お名前が意図したものと違う場合は、お知らせください。
 [surfaces]
 - heading "A2UI" [level=1]
-- paragraph: 京都 和食の予約(2026年11月20日 金曜・4名)
+- paragraph:
+  - strong: 京都 和食の予約
 - text: お店
 - radio "花かご(祇園・東山/懐石)" [checked]
 - text: 花かご(祇園・東山/懐石)
@@ -49,8 +59,8 @@
 - text: 人数
 - spinbutton: "4"
 - text: お名前
-- textbox "例:山田 太郎": 山田 太郎
+- textbox "例:山田 花子": 山田 太郎
 - text: 電話番号
-- textbox "例:090-1234-5678": 090-1234-5678
+- textbox "例:09012345678": 090-1234-5678
 - button "予約する":
   - paragraph: 予約する

@@ -7,7 +7,15 @@ const LineItemsApi = {
   name: 'LineItems',
   schema: z.object({
     label: z.string(),
-    columns: z.array(z.object({ key: z.string(), label: z.string(), type: z.enum(['text', 'number']) })),
+    columns: z.array(
+      z.object({
+        key: z.string(),
+        label: z.string(),
+        type: z.enum(['text', 'number', 'select']),
+        // select の列の選択肢。
+        options: z.array(z.object({ value: z.string(), label: z.string() })).optional(),
+      }),
+    ),
     // データモデルへのバインド。値が変わると表が描き直され、setValue() でデータモデルを書き換えられる。
     value: CommonSchemas.DynamicValue,
   }),
@@ -20,11 +28,13 @@ export const LineItems = createComponentImplementation(LineItemsApi, ({ props })
   const rows: Row[] = Array.isArray(props.value) ? (props.value as Row[]) : []
   const setRows = (next: Row[]) => props.setValue(next)
 
-  const setCell = (rowIndex: number, key: string, text: string, type: 'text' | 'number') => {
+  const setCell = (rowIndex: number, key: string, text: string, type: string) => {
     const cell = type === 'number' && text !== '' ? Number(text) : text
     setRows(rows.map((row, index) => (index === rowIndex ? { ...row, [key]: cell } : row)))
   }
-  const addRow = () => setRows([...rows, Object.fromEntries(columns.map((column) => [column.key, column.type === 'number' ? 1 : '']))])
+  /** 新しい行の初期値: 数値は 1、選択肢は先頭、文字は空。 */
+  const blank = (column: (typeof columns)[number]) => (column.type === 'number' ? 1 : column.type === 'select' ? (column.options?.[0]?.value ?? '') : '')
+  const addRow = () => setRows([...rows, Object.fromEntries(columns.map((column) => [column.key, blank(column)]))])
   const removeRow = (rowIndex: number) => setRows(rows.filter((_, index) => index !== rowIndex))
 
   return (
@@ -45,12 +55,26 @@ export const LineItems = createComponentImplementation(LineItemsApi, ({ props })
             <tr key={rowIndex}>
               {columns.map((column) => (
                 <td key={column.key}>
-                  <input
-                    type={column.type}
-                    aria-label={`${column.label} ${rowIndex + 1}`}
-                    value={String(row[column.key] ?? '')}
-                    onChange={(event) => setCell(rowIndex, column.key, event.target.value, column.type)}
-                  />
+                  {column.type === 'select' ? (
+                    <select
+                      aria-label={`${column.label} ${rowIndex + 1}`}
+                      value={String(row[column.key] ?? '')}
+                      onChange={(event) => setCell(rowIndex, column.key, event.target.value, column.type)}
+                    >
+                      {column.options?.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type={column.type}
+                      aria-label={`${column.label} ${rowIndex + 1}`}
+                      value={String(row[column.key] ?? '')}
+                      onChange={(event) => setCell(rowIndex, column.key, event.target.value, column.type)}
+                    />
+                  )}
                 </td>
               ))}
               <td>

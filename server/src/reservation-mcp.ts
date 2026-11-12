@@ -1,7 +1,7 @@
 // 予約の MCP サーバー。Agent SDK と同じプロセスの中で動き、Claude からは mcp__reservations__* のツールに見える。
 import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
-import type { Reservations } from './reservations.ts'
+import { RESTAURANTS, type Reservations, SLOTS } from './reservations.ts'
 
 const SERVER = 'reservations'
 /** 読むだけのツール。Claude がいつ呼んでもよい。 */
@@ -9,25 +9,52 @@ export const READ_TOOLS = [`mcp__${SERVER}__search_availability`, `mcp__${SERVER
 /** 予約を保存するツール。実行の前に、ユーザーに承認フォームを出す(claude.ts の canUseTool)。 */
 export const CREATE_TOOL = `mcp__${SERVER}__create_reservation`
 
+// 入力エラーの文言を日本語にする(承認フォームのエラー表示に使う)。
+z.config(z.locales.ja())
+
+/** enum の値と、承認フォームに出す表示名(labels)。 */
+const choice = (title: string, entries: [value: string, label: string][]) =>
+  z.enum(entries.map(([value]) => value)).meta({ title, labels: Object.fromEntries(entries) })
+
 /**
- * create_reservation の入力。title は承認フォームのラベルになる(approval.ts)。
- * ネストした項目(contact)と明細(courses)を含む。
+ * create_reservation の入力。承認フォームはこのスキーマから作られる(approval.ts)。
+ * title がラベル、enum が選択肢、min / max などが入力チェックになる。ネストした項目(contact)と明細(courses)を含む。
  */
 export const createReservationInput = {
-  restaurantId: z.string().meta({ title: '店', description: 'id from search_availability' }),
-  date: z.string().meta({ title: '日付', description: 'YYYY-MM-DD' }),
-  time: z.string().meta({ title: '時間', description: 'HH:MM, one of availableTimes' }),
-  partySize: z.number().int().min(1).meta({ title: '人数' }),
-  contact: z.object({ name: z.string().min(1).meta({ title: 'お名前' }), phone: z.string().min(1).meta({ title: '電話番号' }) }).meta({ title: '連絡先' }),
+  restaurantId: choice(
+    '店',
+    RESTAURANTS.map((r) => [r.id, `${r.name}(${r.area}/${r.cuisine})`]),
+  ).describe('id from search_availability'),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD の形で入力してください')
+    .meta({ title: '日付', description: 'YYYY-MM-DD' }),
+  time: choice(
+    '時間',
+    SLOTS.map((slot) => [slot, slot]),
+  ).describe('one of availableTimes'),
+  partySize: z.number().int().min(1).max(20).meta({ title: '人数' }),
+  contact: z
+    .object({ name: z.string().min(1).max(40).meta({ title: 'お名前' }), phone: z.string().min(10).max(15).meta({ title: '電話番号' }) })
+    .meta({ title: '連絡先' }),
   courses: z
-    .array(z.object({ course: z.string().meta({ title: 'コース' }), quantity: z.number().int().min(1).meta({ title: '数量' }) }))
-    .meta({ title: 'コースの事前注文', description: "Pre-ordered courses. course must be one of the restaurant's courses." }),
-  notes: z.string().optional().meta({ title: 'ご要望' }),
+    .array(
+      z.object({
+        course: choice(
+          'コース',
+          RESTAURANTS.flatMap((r) => r.courses.map((course): [string, string] => [course, `${r.name}: ${course}`])),
+        ),
+        quantity: z.number().int().min(1).max(20).meta({ title: '数量' }),
+      }),
+    )
+    .min(1)
+    .meta({ title: 'コースの事前注文', description: "Pre-ordered courses. course must be one of the chosen restaurant's courses." }),
+  notes: z.string().max(200).optional().meta({ title: 'ご要望' }),
 }
 
-/** 承認フォームを出すツールと、その入力の JSON Schema。 */
-export const APPROVAL_SCHEMAS: Record<string, unknown> = {
-  [CREATE_TOOL]: z.toJSONSchema(z.object(createReservationInput).meta({ title: '予約の保存' })),
+/** 実行の前に承認フォームを出すツールと、その入力のスキーマ。 */
+export const APPROVAL_SCHEMAS: Record<string, z.ZodType> = {
+  [CREATE_TOOL]: z.object(createReservationInput).meta({ title: '予約の保存' }),
 }
 
 const json = (value: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(value) }] })

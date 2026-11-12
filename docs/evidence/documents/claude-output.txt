@@ -1,167 +1,182 @@
-(node:12896) [CLAUDE_SDK_CAN_USE_TOOL_SHADOWED] Warning: canUseTool will not be invoked for: mcp__reservations__search_availability, mcp__reservations__list_reservations. Bare allowedTools entries auto-approve the whole tool before the callback is consulted. To gate every tool call, use a PreToolUse hook; or remove the bare names from allowedTools so they fall through to canUseTool. Allow rules from settings files can also shadow the callback but are not visible here.
+(node:15876) [CLAUDE_SDK_CAN_USE_TOOL_SHADOWED] Warning: canUseTool will not be invoked for: mcp__reservations__search_availability, mcp__reservations__list_reservations. Bare allowedTools entries auto-approve the whole tool before the callback is consulted. To gate every tool call, use a PreToolUse hook; or remove the bare names from allowedTools so they fall through to canUseTool. Allow rules from settings files can also shadow the callback but are not visible here.
 (Use `node --trace-warnings ...` to show where the warning was created)
+架空の雑貨店「ことり雑貨店」の月別売上です。数値はすべてダミーです。
+
 <a2ui>
-surface("sales-2026-h1")
-root = Table("架空の雑貨店 月別売上(2026年4〜9月)", ["月", "売上(円)", "客数(人)", "客単価(円)"], [["2026年4月", 7680000, 2400, 3200], ["2026年5月", 9075000, 2750, 3300], ["2026年6月", 7130000, 2300, 3100], ["2026年7月", 9425000, 2900, 3250], ["2026年8月", 11220000, 3300, 3400], ["2026年9月", 8190000, 2600, 3150]])
+surface("kotori-sales-2026")
+root = Table("ことり雑貨店 月別売上(2026年4〜9月)", ["月", "売上(円)", "客数(人)", "客単価(円)"], [["2026年4月", 2880000, 1800, 1600], ["2026年5月", 3300000, 2200, 1500], ["2026年6月", 2646000, 1890, 1400], ["2026年7月", 3120000, 2000, 1560], ["2026年8月", 3570000, 2100, 1700], ["2026年9月", 3040000, 1900, 1600], ["合計/平均", 18556000, 11890, 1561]])
 </a2ui>
 
-(node:12896) [CLAUDE_SDK_CAN_USE_TOOL_SHADOWED] Warning: canUseTool will not be invoked for: mcp__reservations__search_availability, mcp__reservations__list_reservations. Bare allowedTools entries auto-approve the whole tool before the callback is consulted. To gate every tool call, use a PreToolUse hook; or remove the bare names from allowedTools so they fall through to canUseTool. Allow rules from settings files can also shadow the callback but are not visible here.
-架空の雑貨店の月別売上表です。客単価は売上÷客数で計算しているので、3つの数字は一致しています。CSVまたはExcelでダウンロードできます。<a2ui>
-surface("sales-deck-2026-h1")
-root = SlideDeck("社内報告:雑貨店 月別売上(2026年4〜9月)", [{title: "半期サマリー(4〜9月)", bullets: ["売上合計:5,272万円(月平均 約879万円)", "客数合計:16,250人", "平均客単価:約3,244円", "最高月:8月(1,122万円)/最低月:6月(713万円)"]}, {title: "月別の推移", bullets: ["4月 768万円 → 5月 908万円:GWで増加", "6月 713万円:客数・客単価ともに年間最低", "7月 943万円 → 8月 1,122万円:夏季に最大", "9月 819万円:8月から約27%減"]}, {title: "所見と今後の対応", bullets: ["売上は客数の増減に連動(客単価は3,100〜3,400円で安定)", "6月の落ち込み対策として梅雨向け企画を検討", "8月の好調要因を分析し、他の月へ展開", "10月以降は秋・年末商戦に向けた在庫計画を準備"]}])
+(node:15876) [CLAUDE_SDK_CAN_USE_TOOL_SHADOWED] Warning: canUseTool will not be invoked for: mcp__reservations__search_availability, mcp__reservations__list_reservations. Bare allowedTools entries auto-approve the whole tool before the callback is consulted. To gate every tool call, use a PreToolUse hook; or remove the bare names from allowedTools so they fall through to canUseTool. Allow rules from settings files can also shadow the callback but are not visible here.
+客単価は売上÷客数です。合計行の客単価は、期間全体の売上÷客数を四捨五入した値です。表はCSVかExcelでダウンロードできます。<a2ui>
+surface("kotori-sales-deck-2026")
+root = SlideDeck("ことり雑貨店 2026年4〜9月 売上報告", [{title: "半期サマリー(2026年4〜9月)", bullets: ["売上合計:18,556,000円", "客数合計:11,890人", "期間平均の客単価:1,561円", "月平均売上:約3,093,000円", "※数値はすべて架空のダミーデータ"]}, {title: "月別の動き", bullets: ["最高:8月 3,570,000円(客単価1,700円)", "次点:5月 3,300,000円(客数2,200人で最多)", "最低:6月 2,646,000円(客単価1,400円で最低)", "4月から5月は客数増で売上が伸長", "6月は客数・客単価ともに低下"]}, {title: "考察と今後の施策", bullets: ["8月は客単価が最高で、ギフト・夏物の需要が考えられる", "6月の落ち込みは梅雨期の来店減が一因と推測", "6月は雨の日向けの企画やセットで客単価を底上げしたい", "5月の客数を支えた集客施策は他の月にも展開したい", "10月以降は秋冬商品とギフト需要を見込んだ計画を立てる"]}])
 </a2ui>
 
-3枚のスライドにまとめました。PowerPoint(.pptx)でダウンロードできます。
+3枚にまとめました。PowerPoint(.pptx)でダウンロードできます。
 
-- 合計や平均は表の数値から計算しました。
-(node:12896) [CLAUDE_SDK_CAN_USE_TOOL_SHADOWED] Warning: canUseTool will not be invoked for: mcp__reservations__search_availability, mcp__reservations__list_reservations. Bare allowedTools entries auto-approve the whole tool before the callback is consulted. To gate every tool call, use a PreToolUse hook; or remove the bare names from allowedTools so they fall through to canUseTool. Allow rules from settings files can also shadow the callback but are not visible here.
-- 3枚目の所見や対応案は架空データに基づく仮のものです。実際の報告に使う場合は内容を見直してください。<a2ui>
-surface("sales-report-2026-h1")
-root = HtmlReport("雑貨店 月別売上レポート(2026年4〜9月)", r"""<style>
-body{font-family:sans-serif;color:#222;line-height:1.7;margin:16px}
-h1{font-size:22px;border-bottom:3px solid #3b7dd8;padding-bottom:6px}
-h2{font-size:17px;margin-top:28px;color:#3b7dd8}
-table{border-collapse:collapse;width:100%;margin:8px 0}
-th,td{border:1px solid #ccc;padding:6px 10px;text-align:right}
-th{background:#eef3fb}
-td:first-child,th:first-child{text-align:left}
+(node:15876) [CLAUDE_SDK_CAN_USE_TOOL_SHADOWED] Warning: canUseTool will not be invoked for: mcp__reservations__search_availability, mcp__reservations__list_reservations. Bare allowedTools entries auto-approve the whole tool before the callback is consulted. To gate every tool call, use a PreToolUse hook; or remove the bare names from allowedTools so they fall through to canUseTool. Allow rules from settings files can also shadow the callback but are not visible here.
+3枚目の考察(夏物・ギフト需要、梅雨期の来店減など)は、数値からの推測です。実際の要因が分かっている場合は、差し替えてください。<a2ui>
+surface("kotori-sales-report-2026")
+root = HtmlReport("ことり雑貨店 売上レポート(2026年4〜9月)", r"""
+<style>
+body{font-family:sans-serif;color:#2b2b2b;line-height:1.7;margin:0;padding:8px}
+h1{font-size:22px;border-bottom:3px solid #c9855b;padding-bottom:6px}
+h2{font-size:17px;margin-top:28px;color:#8a4f2a}
 .kpi{display:flex;gap:12px;flex-wrap:wrap}
-.kpi div{flex:1;min-width:130px;background:#f5f8fc;border-radius:8px;padding:10px}
+.kpi div{flex:1;min-width:130px;background:#faf3ee;border-radius:8px;padding:10px 14px}
 .kpi b{display:block;font-size:20px}
-.note{font-size:12px;color:#666}
+.kpi span{font-size:12px;color:#777}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border:1px solid #ddd;padding:6px 10px;text-align:right}
+th{background:#c9855b;color:#fff}
+td:first-child,th:first-child{text-align:left}
+tr.total td{font-weight:bold;background:#faf3ee}
+.note{font-size:12px;color:#777}
 </style>
-<h1>雑貨店 月別売上レポート(2026年4〜9月)</h1>
-<p class="note">※ 架空の店舗・架空データによるサンプルです。</p>
+<h1>ことり雑貨店 売上レポート(2026年4〜9月)</h1>
+<p class="note">※数値はすべて架空のダミーデータです。</p>
+
 <h2>1. 半期サマリー</h2>
 <div class="kpi">
-<div>売上合計<b>5,272万円</b></div>
-<div>月平均売上<b>約879万円</b></div>
-<div>客数合計<b>16,250人</b></div>
-<div>平均客単価<b>約3,244円</b></div>
+<div><span>売上合計</span><b>18,556,000円</b></div>
+<div><span>客数合計</span><b>11,890人</b></div>
+<div><span>平均客単価</span><b>1,561円</b></div>
+<div><span>月平均売上</span><b>約3,093,000円</b></div>
 </div>
-<h2>2. 月別売上(万円)</h2>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" width="640" height="300">
-<g stroke="#ddd" stroke-width="1">
-<line x1="60" y1="260" x2="620" y2="260"/>
-<line x1="60" y1="186.7" x2="620" y2="186.7"/>
-<line x1="60" y1="113.3" x2="620" y2="113.3"/>
-<line x1="60" y1="40" x2="620" y2="40"/>
+
+<h2>2. 月別売上(棒グラフ)</h2>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 300" width="100%" role="img" aria-label="月別売上の棒グラフ">
+<g stroke="#e3e3e3" stroke-width="1">
+<line x1="65" y1="250" x2="580" y2="250" stroke="#999"/>
+<line x1="65" y1="197.5" x2="580" y2="197.5"/>
+<line x1="65" y1="145" x2="580" y2="145"/>
+<line x1="65" y1="92.5" x2="580" y2="92.5"/>
+<line x1="65" y1="40" x2="580" y2="40"/>
 </g>
-<g font-size="11" fill="#666" text-anchor="end">
-<text x="54" y="264">0</text>
-<text x="54" y="190.7">400</text>
-<text x="54" y="117.3">800</text>
-<text x="54" y="44">1,200</text>
+<g font-size="11" fill="#777" text-anchor="end">
+<text x="58" y="254">0</text>
+<text x="58" y="201">100万</text>
+<text x="58" y="149">200万</text>
+<text x="58" y="96">300万</text>
+<text x="58" y="44">400万</text>
 </g>
-<g fill="#3b7dd8">
-<rect x="80" y="119.2" width="56" height="140.8"/>
-<rect x="170" y="93.6" width="56" height="166.4"/>
-<rect x="260" y="129.3" width="56" height="130.7"/>
-<rect x="350" y="87.2" width="56" height="172.8"/>
-<rect x="440" y="54.3" width="56" height="205.7" fill="#e07b39"/>
-<rect x="530" y="109.8" width="56" height="150.2"/>
+<g fill="#d9a67f">
+<rect x="70" y="98.8" width="60" height="151.2"/>
+<rect x="155" y="76.8" width="60" height="173.2"/>
+<rect x="240" y="111.1" width="60" height="138.9" fill="#b9b9b9"/>
+<rect x="325" y="86.2" width="60" height="163.8"/>
+<rect x="410" y="62.6" width="60" height="187.4" fill="#b8643a"/>
+<rect x="495" y="90.4" width="60" height="159.6"/>
 </g>
-<g font-size="12" fill="#222" text-anchor="middle">
-<text x="108" y="113">768</text>
-<text x="198" y="87.6">908</text>
-<text x="288" y="123.3">713</text>
-<text x="378" y="81.2">943</text>
-<text x="468" y="48.3">1,122</text>
-<text x="558" y="103.8">819</text>
-<text x="108" y="280">4月</text>
-<text x="198" y="280">5月</text>
-<text x="288" y="280">6月</text>
-<text x="378" y="280">7月</text>
-<text x="468" y="280">8月</text>
-<text x="558" y="280">9月</text>
+<g font-size="12" fill="#2b2b2b" text-anchor="middle">
+<text x="100" y="92">288万</text>
+<text x="185" y="70">330万</text>
+<text x="270" y="105">265万</text>
+<text x="355" y="80">312万</text>
+<text x="440" y="56">357万</text>
+<text x="525" y="84">304万</text>
 </g>
+<g font-size="12" fill="#555" text-anchor="middle">
+<text x="100" y="270">4月</text>
+<text x="185" y="270">5月</text>
+<text x="270" y="270">6月</text>
+<text x="355" y="270">7月</text>
+<text x="440" y="270">8月</text>
+<text x="525" y="270">9月</text>
+</g>
+<text x="300" y="292" font-size="11" fill="#999" text-anchor="middle">濃い色=最高(8月)、灰色=最低(6月)/単位:円</text>
 </svg>
+
 <h2>3. 月別データ</h2>
 <table>
 <tr><th>月</th><th>売上(円)</th><th>客数(人)</th><th>客単価(円)</th></tr>
-<tr><td>2026年4月</td><td>7,680,000</td><td>2,400</td><td>3,200</td></tr>
-<tr><td>2026年5月</td><td>9,075,000</td><td>2,750</td><td>3,300</td></tr>
-<tr><td>2026年6月</td><td>7,130,000</td><td>2,300</td><td>3,100</td></tr>
-<tr><td>2026年7月</td><td>9,425,000</td><td>2,900</td><td>3,250</td></tr>
-<tr><td>2026年8月</td><td>11,220,000</td><td>3,300</td><td>3,400</td></tr>
-<tr><td>2026年9月</td><td>8,190,000</td><td>2,600</td><td>3,150</td></tr>
-<tr><th>合計/平均</th><th>52,720,000</th><th>16,250</th><th>約3,244</th></tr>
+<tr><td>2026年4月</td><td>2,880,000</td><td>1,800</td><td>1,600</td></tr>
+<tr><td>2026年5月</td><td>3,300,000</td><td>2,200</td><td>1,500</td></tr>
+<tr><td>2026年6月</td><td>2,646,000</td><td>1,890</td><td>1,400</td></tr>
+<tr><td>2026年7月</td><td>3,120,000</td><td>2,000</td><td>1,560</td></tr>
+<tr><td>2026年8月</td><td>3,570,000</td><td>2,100</td><td>1,700</td></tr>
+<tr><td>2026年9月</td><td>3,040,000</td><td>1,900</td><td>1,600</td></tr>
+<tr class="total"><td>合計/平均</td><td>18,556,000</td><td>11,890</td><td>1,561</td></tr>
 </table>
-<h2>4. 所見と今後の対応</h2>
+<p class="note">客単価=売上÷客数。合計行の客単価は期間全体の売上÷客数(四捨五入)。</p>
+
+<h2>4. 月別の動き</h2>
 <ul>
-<li>4〜5月はGWで増加し、6月は客数・客単価とも年間最低(713万円)。</li>
-<li>8月は夏季需要で最大(1,122万円)、9月は8月から約27%減。</li>
-<li>客単価は3,100〜3,400円で安定しており、売上は客数の増減に連動。</li>
-<li>対応案:6月向けの梅雨企画、8月の好調要因の分析と展開、10月以降の秋・年末商戦に向けた在庫計画。</li>
+<li>最高は8月の3,570,000円で、客単価も1,700円と最高でした。</li>
+<li>5月は客数が2,200人で最多となり、売上は2番目に高い結果でした。</li>
+<li>最低は6月の2,646,000円で、客単価も1,400円と最低でした。</li>
+<li>4月から5月は客数の増加により売上が伸びました。</li>
 </ul>
-<p class="note">所見・対応案は架空データに基づく仮のものです。</p>""")
+
+<h2>5. 考察と今後の施策</h2>
+<ul>
+<li>8月は夏物やギフト需要が客単価を押し上げた可能性があります(推測)。</li>
+<li>6月の落ち込みは梅雨期の来店減が一因と考えられます(推測)。雨の日向けの企画やセット販売で客単価の底上げを図ります。</li>
+<li>5月の客数を支えた集客施策を他の月にも展開します。</li>
+<li>10月以降は秋冬商品とギフト需要を見込んだ計画を立てます。</li>
+</ul>
+""")
 </a2ui>
 
-売上の棒グラフ入りのHTMLレポートにしました。.htmlファイルでダウンロードできます。
+スライドと同じ内容で、売上の棒グラフを入れたHTMLレポートにしました。.htmlでダウンロードできます。
 
-- **グラフ:** 最高月の8月だけオレンジ色にしています。
-- **構成:** サマリー、グラフ、月別データ表、所見の順です。
-(node:12896) [CLAUDE_SDK_CAN_USE_TOOL_SHADOWED] Warning: canUseTool will not be invoked for: mcp__reservations__search_availability, mcp__reservations__list_reservations. Bare allowedTools entries auto-approve the whole tool before the callback is consulted. To gate every tool call, use a PreToolUse hook; or remove the bare names from allowedTools so they fall through to canUseTool. Allow rules from settings files can also shadow the callback but are not visible here.
-- **内容:** 数値はこれまでの表、スライドと同じです。<a2ui>
-surface("sales-pdf-2026-h1")
-root = PdfDocument("雑貨店 月別売上報告書(2026年4〜9月)", [{heading: "1. 概要", paragraphs: ["本報告書は、架空の雑貨店の2026年4月から9月までの月別売上、客数、客単価をまとめたものです。数値はすべて架空のサンプルデータです。", "半期の売上合計は5,272万円(52,720,000円)、月平均は約879万円でした。客数合計は16,250人、平均客単価は約3,244円です。"]}, {heading: "2. 月別データ", paragraphs: ["2026年4月:売上7,680,000円、客数2,400人、客単価3,200円", "2026年5月:売上9,075,000円、客数2,750人、客単価3,300円", "2026年6月:売上7,130,000円、客数2,300人、客単価3,100円", "2026年7月:売上9,425,000円、客数2,900人、客単価3,250円", "2026年8月:売上11,220,000円、客数3,300人、客単価3,400円", "2026年9月:売上8,190,000円、客数2,600人、客単価3,150円"]}, {heading: "3. 推移の分析", paragraphs: ["4月の768万円から5月は908万円へ増加しました。ゴールデンウィークの影響と考えられます。6月は713万円で、客数・客単価ともに期間中の最低となりました。", "7月は943万円に回復し、8月は夏季需要で期間最高の1,122万円を記録しました。9月は819万円と、8月から約27%減少しました。", "客単価は3,100円から3,400円の範囲で安定しており、売上の増減は主に客数の変動に連動しています。"]}, {heading: "4. 今後の対応案", paragraphs: ["(1) 6月の落ち込みへの対策として、梅雨時期向けの企画や販促を検討します。", "(2) 8月の好調要因を分析し、他の月にも展開できる施策を整理します。", "(3) 10月以降の秋・年末商戦に向けて、在庫計画を早めに準備します。", "なお、分析や対応案は架空データに基づく仮のものです。実際の報告に使う場合は内容を見直してください。"]}])
+(node:15876) [CLAUDE_SDK_CAN_USE_TOOL_SHADOWED] Warning: canUseTool will not be invoked for: mcp__reservations__search_availability, mcp__reservations__list_reservations. Bare allowedTools entries auto-approve the whole tool before the callback is consulted. To gate every tool call, use a PreToolUse hook; or remove the bare names from allowedTools so they fall through to canUseTool. Allow rules from settings files can also shadow the callback but are not visible here.
+グラフでは、最高の8月を濃い色、最低の6月を灰色にしています。考察の部分は、スライドと同じく数値からの推測です。<a2ui>
+surface("kotori-sales-pdf-2026")
+root = PdfDocument("ことり雑貨店 売上報告書(2026年4〜9月)", [{heading: "1. 概要", paragraphs: ["本報告書は、ことり雑貨店の2026年4月から9月までの月別売上、客数、客単価をまとめたものです。数値はすべて架空のダミーデータです。", "期間中の売上合計は18,556,000円、客数合計は11,890人、期間全体の平均客単価は1,561円でした。月平均売上は約3,093,000円です。"]}, {heading: "2. 月別実績", paragraphs: ["2026年4月:売上2,880,000円、客数1,800人、客単価1,600円", "2026年5月:売上3,300,000円、客数2,200人、客単価1,500円", "2026年6月:売上2,646,000円、客数1,890人、客単価1,400円", "2026年7月:売上3,120,000円、客数2,000人、客単価1,560円", "2026年8月:売上3,570,000円、客数2,100人、客単価1,700円", "2026年9月:売上3,040,000円、客数1,900人、客単価1,600円", "合計/平均:売上18,556,000円、客数11,890人、客単価1,561円(売上÷客数、四捨五入)"]}, {heading: "3. 月別の動き", paragraphs: ["売上が最も高かったのは8月の3,570,000円で、客単価も1,700円と期間中で最高でした。", "5月は客数が2,200人で最多となり、売上は8月に次ぐ3,300,000円でした。4月から5月にかけては、客数の増加により売上が伸びました。", "売上が最も低かったのは6月の2,646,000円で、客数・客単価ともに前月から低下しました。客単価1,400円は期間中の最低です。"]}, {heading: "4. 考察と今後の施策", paragraphs: ["8月は夏物やギフト需要が客単価を押し上げた可能性があります。6月の落ち込みは、梅雨期の来店減が一因と考えられます。いずれも数値からの推測であり、実際の要因は別途確認が必要です。", "今後の施策は次の3点です。(1) 6月など来店が減る時期に、雨の日向けの企画やセット販売で客単価を底上げする。(2) 5月の客数を支えた集客施策を他の月にも展開する。(3) 10月以降は秋冬商品とギフト需要を見込んだ計画を立てる。"]}])
 </a2ui>
 
-A4のPDF報告書にまとめました。.pdfでダウンロードできます。
+1〜2ページ程度の報告書にまとめました。PDFでダウンロードできます。
 
-- **構成:** 概要、月別データ、推移の分析、今後の対応案の4項目です。
-- **グラフ:** PDFは文章のみの形式なので、棒グラフは入れていません。グラフが必要な場合は、先ほどのHTMLレポートをご利用ください。
-(node:12896) [CLAUDE_SDK_CAN_USE_TOOL_SHADOWED] Warning: canUseTool will not be invoked for: mcp__reservations__search_availability, mcp__reservations__list_reservations. Bare allowedTools entries auto-approve the whole tool before the callback is consulted. To gate every tool call, use a PreToolUse hook; or remove the bare names from allowedTools so they fall through to canUseTool. Allow rules from settings files can also shadow the callback but are not visible here.
-- **ページ数:** 1〜2ページに収まる想定ですが、実際のページ数は表示の結果をご確認ください。<a2ui>
-surface("sales-line-chart")
-root = SvgImage("月別売上の推移(2026年4〜9月)", r"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" font-family="sans-serif">
-<rect width="640" height="360" fill="#ffffff"/>
-<text x="320" y="28" font-size="16" font-weight="bold" text-anchor="middle" fill="#222">月別売上の推移(2026年4〜9月・万円)</text>
-<g stroke="#e0e0e0" stroke-width="1">
-<line x1="70" y1="290" x2="610" y2="290"/>
-<line x1="70" y1="210" x2="610" y2="210"/>
-<line x1="70" y1="130" x2="610" y2="130"/>
-<line x1="70" y1="50" x2="610" y2="50"/>
+(node:15876) [CLAUDE_SDK_CAN_USE_TOOL_SHADOWED] Warning: canUseTool will not be invoked for: mcp__reservations__search_availability, mcp__reservations__list_reservations. Bare allowedTools entries auto-approve the whole tool before the callback is consulted. To gate every tool call, use a PreToolUse hook; or remove the bare names from allowedTools so they fall through to canUseTool. Allow rules from settings files can also shadow the callback but are not visible here.
+PDFは文章のみのため、HTML版にあった棒グラフは入っていません。月別の数値は「2. 月別実績」に載せています。<a2ui>
+surface("kotori-sales-line-2026")
+root = SvgImage("ことり雑貨店 月別売上の推移(2026年4〜9月)", r"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 340" width="640" height="340" font-family="sans-serif">
+<rect width="640" height="340" fill="#ffffff"/>
+<text x="320" y="28" font-size="16" font-weight="bold" fill="#2b2b2b" text-anchor="middle">ことり雑貨店 月別売上の推移(2026年4〜9月)</text>
+<g stroke="#e3e3e3" stroke-width="1">
+<line x1="80" y1="50" x2="590" y2="50"/>
+<line x1="80" y1="102.5" x2="590" y2="102.5"/>
+<line x1="80" y1="155" x2="590" y2="155"/>
+<line x1="80" y1="207.5" x2="590" y2="207.5"/>
+<line x1="80" y1="260" x2="590" y2="260" stroke="#999"/>
 </g>
-<g font-size="11" fill="#666" text-anchor="end">
-<text x="64" y="294">0</text>
-<text x="64" y="214">400</text>
-<text x="64" y="134">800</text>
-<text x="64" y="54">1,200</text>
+<g font-size="11" fill="#777" text-anchor="end">
+<text x="72" y="54">400万</text>
+<text x="72" y="106">350万</text>
+<text x="72" y="159">300万</text>
+<text x="72" y="211">250万</text>
+<text x="72" y="264">200万</text>
 </g>
-<polyline points="110,136.4 200,108.5 290,147.4 380,101.5 470,65.6 560,126.2" fill="none" stroke="#3b7dd8" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
-<g fill="#3b7dd8" stroke="#fff" stroke-width="2">
-<circle cx="110" cy="136.4" r="6"/>
-<circle cx="200" cy="108.5" r="6"/>
-<circle cx="290" cy="147.4" r="6" fill="#7a7a7a"/>
-<circle cx="380" cy="101.5" r="6"/>
-<circle cx="470" cy="65.6" r="7" fill="#e07b39"/>
-<circle cx="560" cy="126.2" r="6"/>
+<polyline points="110,167.6 194,123.5 278,192.2 362,142.4 446,95.2 530,150.8" fill="none" stroke="#c9855b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<g fill="#c9855b" stroke="#ffffff" stroke-width="2">
+<circle cx="110" cy="167.6" r="6"/>
+<circle cx="194" cy="123.5" r="6"/>
+<circle cx="278" cy="192.2" r="7" fill="#7f8c9a"/>
+<circle cx="362" cy="142.4" r="6"/>
+<circle cx="446" cy="95.2" r="7" fill="#b8402a"/>
+<circle cx="530" cy="150.8" r="6"/>
 </g>
-<g font-size="12" fill="#222" text-anchor="middle">
-<text x="110" y="124">768</text>
-<text x="200" y="96">908</text>
-<text x="290" y="170">713</text>
-<text x="380" y="89">943</text>
-<text x="470" y="50" font-weight="bold" fill="#e07b39">1,122</text>
-<text x="560" y="114">819</text>
+<g font-size="12" fill="#2b2b2b" text-anchor="middle">
+<text x="110" y="153">288万</text>
+<text x="194" y="109">330万</text>
+<text x="278" y="219">265万</text>
+<text x="362" y="128">312万</text>
+<text x="446" y="81" font-weight="bold">357万</text>
+<text x="530" y="136">304万</text>
 </g>
-<g font-size="12" fill="#444" text-anchor="middle">
-<text x="110" y="310">4月</text>
-<text x="200" y="310">5月</text>
-<text x="290" y="310">6月</text>
-<text x="380" y="310">7月</text>
-<text x="470" y="310">8月</text>
-<text x="560" y="310">9月</text>
+<g font-size="12" fill="#555" text-anchor="middle">
+<text x="110" y="280">4月</text>
+<text x="194" y="280">5月</text>
+<text x="278" y="280">6月</text>
+<text x="362" y="280">7月</text>
+<text x="446" y="280">8月</text>
+<text x="530" y="280">9月</text>
 </g>
-<g font-size="11" fill="#666">
-<circle cx="200" cy="338" r="5" fill="#e07b39"/><text x="210" y="342">最高(8月)</text>
-<circle cx="300" cy="338" r="5" fill="#7a7a7a"/><text x="310" y="342">最低(6月)</text>
-</g>
+<text x="320" y="312" font-size="11" fill="#777" text-anchor="middle">赤=最高(8月)/灰=最低(6月)/縦軸は200万円〜400万円(単位:円)/架空データ</text>
 </svg>""")
 </a2ui>
 
-月別売上の折れ線グラフを描きました。SVGまたはPNGでダウンロードできます。
+月別売上の折れ線グラフを描きました。SVGかPNGでダウンロードできます。
 
-- **最高月:** 8月(1,122万円)をオレンジ色にしています。
-- **最低月:** 6月(713万円)を灰色にしています。

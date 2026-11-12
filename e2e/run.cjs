@@ -1,5 +1,5 @@
 // 本物の Claude 呼び出しでアプリを通しで操作し、動画・スクリーンショット・ダウンロードしたファイルを残す。
-// 使い方: サーバーとクライアントを起動してから  node e2e/run.cjs [reservation|documents]
+// 使い方: サーバーとクライアントを起動してから  node e2e/run.cjs [reservation|cancel|documents]
 const fs = require('node:fs')
 const path = require('node:path')
 const { chromium } = require('playwright')
@@ -75,70 +75,116 @@ async function open(name) {
   }
 }
 
+/** 予約を依頼し、Claude が出したフォームを埋めて送信し、承認フォームが出るまで進める。 */
+async function submitReservationForm(app) {
+  const { page, log } = app
+  await app.say('来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して')
+  await app.screenshot('form')
+
+  // フォームの中身は毎回 Claude が決めるので、空のテキスト欄を placeholder から推測して埋める。
+  const fields = page.locator('.surface input:not([type=date], [type=time], [type=range], [type=checkbox], [type=radio]), .surface textarea')
+  for (let i = 0; i < (await fields.count()); i++) {
+    const field = fields.nth(i)
+    if (await field.inputValue()) continue
+    const hint = `${(await field.getAttribute('placeholder')) ?? ''} ${(await field.getAttribute('type')) ?? ''}`
+    const value = /090|電話|tel/i.test(hint) ? '090-1234-5678' : /山田|太郎|名前/.test(hint) ? '山田 太郎' : '窓際の席を希望'
+    await field.pressSequentially(value, { delay: 30 })
+    log(`[fill] "${hint.trim()}" <- ${value}`)
+  }
+  await app.screenshot('filled')
+
+  const submit = page
+    .locator('.surface')
+    .getByRole('button')
+    .filter({ hasNotText: /キャンセル|クリア|リセット|やめる/ })
+    .last()
+  log(`[click] ${(await submit.textContent()).trim()}`)
+  await submit.click()
+
+  // Claude が create_reservation を呼ぶと、実行の前に承認フォームが出る。
+  const approval = page.locator('.surface[data-surface-id^="approval_"]')
+  await approval.waitFor({ timeout: 300_000 })
+  await page.waitForTimeout(1000)
+  await app.screenshot('approval')
+  return approval
+}
+
+/** 指定の値が入っている入力欄を探す。 */
+async function findInput(scope, value) {
+  const inputs = scope.locator('input')
+  for (let i = 0; i < (await inputs.count()); i++) if ((await inputs.nth(i).inputValue()) === value) return inputs.nth(i)
+  throw new Error(`"${value}" が入った入力欄が無い`)
+}
+
+/** 最後に保存された予約と、その明細を SQLite から直接読む。 */
+function lastReservation() {
+  const { DatabaseSync } = require('node:sqlite')
+  const db = new DatabaseSync(path.join(__dirname, '..', 'server', 'data', 'reservations.db'), { readOnly: true })
+  const reservation = db.prepare('SELECT * FROM reservations ORDER BY id DESC LIMIT 1').get()
+  const courses = db.prepare('SELECT course, quantity FROM reservation_courses WHERE reservation_id = ?').all(reservation?.id ?? 0)
+  db.close()
+  return { reservation, courses }
+}
+
 const scenarios = {
   // 予約: MCP の空き状況でフォームが作られ、送信すると承認フォームが出る。そこで値を直して承認すると SQLite に保存される。
   async reservation() {
     const app = await open('reservation')
     const { page, log } = app
-    await app.say('来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して')
-    await app.screenshot('form')
+    const approval = await submitReservationForm(app)
+    const approve = approval.getByRole('button', { name: '承認して実行' })
 
-    // フォームの中身は毎回 Claude が決めるので、空のテキスト欄を placeholder から推測して埋める。
-    const fields = page.locator('.surface input:not([type=date], [type=time], [type=range], [type=checkbox], [type=radio]), .surface textarea')
-    for (let i = 0; i < (await fields.count()); i++) {
-      const field = fields.nth(i)
-      if (await field.inputValue()) continue
-      const hint = `${(await field.getAttribute('placeholder')) ?? ''} ${(await field.getAttribute('type')) ?? ''}`
-      const value = /090|電話|tel/i.test(hint) ? '090-1234-5678' : /山田|太郎|名前/.test(hint) ? '山田 太郎' : '窓際の席を希望'
-      await field.pressSequentially(value, { delay: 30 })
-      log(`[fill] "${hint.trim()}" <- ${value}`)
-    }
-    await app.screenshot('filled')
+    // 入力チェック 1(フォーム上): お名前を空にすると、承認ボタンが押せなくなる。
+    const name = await findInput(approval, '山田 太郎')
+    await name.fill('')
+    await page.waitForTimeout(500)
+    await approve.scrollIntoViewIfNeeded()
+    log(`[check] お名前が空のとき、承認ボタンは押せない: ${await approve.isDisabled()}`)
+    await app.screenshot('approval-name-empty')
+    await name.pressSequentially('山田 花子', { delay: 30 })
+    log(`[edit] お名前: 山田 太郎 -> 山田 花子(承認ボタンは押せる: ${await approve.isEnabled()})`)
 
-    const submit = page
-      .locator('.surface')
-      .getByRole('button')
-      .filter({ hasNotText: /キャンセル|クリア|リセット|やめる/ })
-      .last()
-    log(`[click] ${(await submit.textContent()).trim()}`)
-    await submit.click()
+    // 入力チェック 2(サーバー側): 明細の数量を 0 にして承認すると、理由が返り、フォームは開いたまま。
+    await approval.getByLabel('数量 1').fill('0')
+    await approve.click()
+    await page.locator('.chat li.error').waitFor()
+    log(`[check] 数量 0 で承認したときの表示: ${(await page.locator('.chat li.error').last().textContent()).replaceAll('\n', ' / ')}`)
+    await app.screenshot('approval-rejected')
 
-    // Claude が create_reservation を呼ぶと、実行の前に承認フォームが出る。
-    const approval = page.locator('.surface[data-surface-id^="approval_"]')
-    await approval.waitFor({ timeout: 300_000 })
-    await page.waitForTimeout(1000)
-    await app.screenshot('approval')
-
-    // 承認フォームで、ネストした項目(連絡先のお名前)と明細(コースの事前注文)を直してから承認する。
-    const inputs = approval.locator('input')
-    for (let i = 0; i < (await inputs.count()); i++) {
-      if ((await inputs.nth(i).inputValue()) !== '山田 太郎') continue
-      await inputs.nth(i).fill('')
-      await inputs.nth(i).pressSequentially('山田 花子', { delay: 30 })
-      log('[edit] お名前: 山田 太郎 -> 山田 花子')
-    }
-    // 明細: 1 行目の数量を 3 に減らし、行を追加して、同じ店のもう 1 つのコースを 1 つ入れる。
+    // 明細を直す: 1 行目の数量を 3 に、行を追加して同じ店のもう 1 つのコースを 1 つ。
     const otherCourse = { '月コース 12,000円': '花コース 18,000円', 'おまかせ 15,000円': '鴨鍋コース 9,800円', 'おばんざい膳 4,500円': '季節の会席 7,000円' }
     const firstCourse = await approval.getByLabel('コース 1').inputValue()
     await approval.getByLabel('数量 1').fill('3')
     await approval.getByRole('button', { name: '行を追加' }).click()
-    await approval.getByLabel('コース 2').pressSequentially(otherCourse[firstCourse] ?? firstCourse, { delay: 20 })
+    await approval.getByLabel('コース 2').selectOption(otherCourse[firstCourse] ?? firstCourse)
     await approval.getByLabel('数量 2').fill('1')
     log(`[edit] コースの事前注文: ${firstCourse} x3, ${otherCourse[firstCourse] ?? firstCourse} x1`)
     await app.screenshot('approval-edited')
-    await approval.getByRole('button', { name: '承認して実行' }).click()
+    await approve.click()
     log('[click] 承認して実行')
     await app.idle()
     await app.screenshot('saved')
 
     // 保存された行を SQLite から直接読む。
-    const { DatabaseSync } = require('node:sqlite')
-    const db = new DatabaseSync(path.join(__dirname, '..', 'server', 'data', 'reservations.db'), { readOnly: true })
-    const row = db.prepare('SELECT * FROM reservations ORDER BY id DESC LIMIT 1').get()
-    const courses = db.prepare('SELECT course, quantity FROM reservation_courses WHERE reservation_id = ?').all(row?.id ?? 0)
-    log(`[sqlite] reservations: ${JSON.stringify(row)}`)
+    const { reservation, courses } = lastReservation()
+    log(`[sqlite] reservations: ${JSON.stringify(reservation)}`)
     log(`[sqlite] reservation_courses: ${JSON.stringify(courses)}`)
-    if (row?.name !== '山田 花子' || courses.length !== 2) throw new Error('承認フォームで直した内容が保存されていない')
+    if (reservation?.name !== '山田 花子' || courses.length !== 2) throw new Error('承認フォームで直した内容が保存されていない')
+    await app.close()
+  },
+
+  // 承認フォームでキャンセルすると、ツールは実行されず、何も保存されない。
+  async cancel() {
+    const app = await open('cancel')
+    const before = lastReservation().reservation?.id ?? 0
+    const approval = await submitReservationForm(app)
+    await approval.getByRole('button', { name: 'キャンセル' }).click()
+    app.log('[click] キャンセル')
+    await app.idle()
+    await app.screenshot('cancelled')
+    const after = lastReservation().reservation?.id ?? 0
+    app.log(`[sqlite] 最後の予約番号: キャンセル前 ${before} / キャンセル後 ${after}`)
+    if (after !== before) throw new Error('キャンセルしたのに保存されている')
     await app.close()
   },
 

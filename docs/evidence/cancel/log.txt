@@ -1,0 +1,45 @@
+[POST /api/chat] 来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して
+[fill] "例:山田 花子 text" <- 山田 太郎
+[fill] "例:09012345678 text" <- 090-1234-5678
+[click] 予約内容を送信
+[POST /api/chat] {"name":"submit_reservation","surfaceId":"reservation-form","context":{"restaurantId":["hanakago"],"date":"2026-11-20T00:00:00Z","time":["19:00"],"partySize":"4","name":"山田 太郎","phone":"090-1234-5678"}}
+[POST /api/approval] {"surfaceId":"approval_aa31f1fe657748a9953c0d6d845d1c97","approved":false}
+[click] キャンセル
+[sqlite] 最後の予約番号: キャンセル前 1 / キャンセル後 1
+[chat]
+来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して
+🔧 reservations__search_availability {"date":"2026-11-20","partySize":4}
+来週金曜(11/20)の夜、4名で空きのあるお店は次の3軒です。内容を確認して、お名前と電話番号を入力してください。
+▶ submit_reservation {"restaurantId":["hanakago"],"date":"2026-11-20T00:00:00Z","time":["19:00"],"partySize":"4","name":"山田 太郎","phone":"090-1234-5678"}
+🔧 reservations__create_reservation {"restaurantId":"hanakago","date":"2026-11-20","time":"19:00","partySize":4,"contact":{"name":"山田 太郎","phone":"090-1234-5678"},"courses":[{"course":"月コース 12,000円","quantity":4}]}
+▶ キャンセル
+予約は保存されていません。承認画面で却下されたため、予約は未完了です。
+
+内容を変えたい場合は、お店・時間・人数・コースなどを教えてください。今のフォームの内容でもう一度試すこともできます。
+[surfaces]
+- heading "A2UI" [level=1]
+- paragraph:
+  - strong: 京都 和食の予約
+- text: お店
+- radio "花かご(祇園・東山/懐石)" [checked]
+- text: 花かご(祇園・東山/懐石)
+- radio "鴨四季(河原町・先斗町/割烹)"
+- text: 鴨四季(河原町・先斗町/割烹)
+- radio "おばんざい 紬(京都駅周辺/おばんざい)"
+- text: おばんざい 紬(京都駅周辺/おばんざい) 日付
+- textbox: 2026-11-20
+- text: 時間
+- button "17:30"
+- button "18:00"
+- button "18:30"
+- button "19:00" [pressed]
+- button "19:30"
+- button "20:00"
+- text: 人数
+- spinbutton: "4"
+- text: お名前
+- textbox "例:山田 花子": 山田 太郎
+- text: 電話番号
+- textbox "例:09012345678": 090-1234-5678
+- button "予約内容を送信":
+  - paragraph: 予約内容を送信

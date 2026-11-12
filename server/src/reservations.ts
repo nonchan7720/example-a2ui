@@ -3,9 +3,9 @@ import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 
-const SLOTS = ['17:30', '18:00', '18:30', '19:00', '19:30', '20:00']
+export const SLOTS = ['17:30', '18:00', '18:30', '19:00', '19:30', '20:00']
 
-const RESTAURANTS = [
+export const RESTAURANTS = [
   { id: 'hanakago', name: '花かご', area: '祇園・東山', cuisine: '懐石', seats: 12, courses: ['月コース 12,000円', '花コース 18,000円'] },
   { id: 'kamoshiki', name: '鴨四季', area: '河原町・先斗町', cuisine: '割烹', seats: 8, courses: ['おまかせ 15,000円', '鴨鍋コース 9,800円'] },
   {

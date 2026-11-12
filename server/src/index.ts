@@ -1,8 +1,9 @@
 // HTTP サーバー。POST /api/chat を受け、Claude の応答を part ごとに SSE で返す。
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import type { RendererCapabilities, RendererState } from '@a2ui/agent'
+import { z } from 'zod'
 import { createProcessor, openA2uiStream } from './a2ui.ts'
-import { approvalForm, coerce, removeApprovalForm } from './approval.ts'
+import { approvalForm, coerce, describeIssue, removeApprovalForm, type Schema } from './approval.ts'
 import { runTurn } from './claude.ts'
 import { openReservations } from './reservations.ts'
 
@@ -63,14 +64,24 @@ async function chat(request: ChatRequest, response: ServerResponse) {
       },
       // 承認フォームを出し、POST /api/approval で回答が来るまで待つ。
       approve: async (toolName, schema, input) => {
+        const formSchema = z.toJSONSchema(schema) as Schema
         const surfaceId = `approval_${crypto.randomUUID().replaceAll('-', '')}`
-        const formSchema = schema as Parameters<typeof approvalForm>[3]
         sendA2ui(approvalForm(surfaceId, processor.catalogs[0].id, toolName, formSchema, input))
-        const answer = await new Promise<ApprovalRequest>((resolve) => pendingApprovals.set(surfaceId, resolve))
-        pendingApprovals.delete(surfaceId)
-        sendA2ui(removeApprovalForm(surfaceId))
-        if (process.env.LOG_RAW) console.log(`\n[approval] ${JSON.stringify(answer)}`)
-        return answer.approved ? (coerce(formSchema, answer.input ?? input) as Record<string, unknown>) : undefined
+        try {
+          for (;;) {
+            const answer = await new Promise<ApprovalRequest>((resolve) => pendingApprovals.set(surfaceId, resolve))
+            if (process.env.LOG_RAW) console.log(`\n[approval] ${JSON.stringify(answer)}`)
+            if (!answer.approved) return undefined
+            // 直された値をツールのスキーマで確かめる。正しくなければ理由を返し、フォームは開いたまま次の回答を待つ。
+            const checked = schema.safeParse(coerce(formSchema, answer.input ?? input))
+            if (checked.success) return checked.data as Record<string, unknown>
+            const reasons = checked.error.issues.map((issue) => describeIssue(formSchema, issue.path, issue.message))
+            send('part', { type: 'error', message: `入力を確認してください。\n${reasons.join('\n')}` })
+          }
+        } finally {
+          pendingApprovals.delete(surfaceId)
+          sendA2ui(removeApprovalForm(surfaceId))
+        }
       },
     })
     for (const part of stream.close()) send('part', part)
