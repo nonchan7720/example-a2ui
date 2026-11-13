@@ -1,0 +1,22 @@
+{
+  "name": "example-a2ui",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.18.0",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "dev": "pnpm --recursive --parallel dev",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "pnpm --recursive typecheck",
+    "test": "pnpm --recursive test",
+    "build": "pnpm --filter a2ui-chat-client build",
+    "e2e": "node e2e/run.cjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.7",
+    "playwright": "1.63.0"
+  }
+}

@@ -1,0 +1,79 @@
+[POST /api/chat] 来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して
+[fill] "例: 山田 太郎 text" <- 山田 太郎
+[fill] "例: 09012345678 text" <- 090-1234-5678
+[click] 予約内容を確認へ
+[POST /api/chat] {"name":"submit_reservation","surfaceId":"reservation-form","context":{"restaurantId":["hanakago"],"date":"2026-11-20T00:00:00Z","time":["19:00"],"partySize":"4","name":"山田 太郎","phone":"090-1234-5678"}}
+[POST /api/options] {"tool":"list_restaurants","args":{"ids":["hanakago"],"limit":50}}
+[POST /api/options] {"tool":"list_menu_items","args":{"restaurantId":"hanakago","ids":["hanakago-01"],"limit":50}}
+[check] お名前が空のとき、承認ボタンは押せない: true
+[edit] お名前: 山田 太郎 -> 山田 花子(承認ボタンは押せる: true)
+[POST /api/approval] {"surfaceId":"approval_53877ea2fc894cc3bdbfb7de20b05e15","approved":true,"input":{"restaurantId":"hanakago","date":"2026-11-20","time":["19:00"],"partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"items":[{"menuItemId":"hanakago-01","quantity":0}],"notes":""}}
+[check] 数量 0 で承認したときの表示: 入力を確認してください。 / 事前注文 1 行目 数量: 小さすぎる値: numberは1以上である必要があります
+[POST /api/options] {"tool":"list_menu_items","args":{"restaurantId":"hanakago","limit":10}}
+[lookup] 開いた直後: 10 件
+[POST /api/options] {"tool":"list_menu_items","args":{"restaurantId":"hanakago","cursor":"hanakago-10","limit":10}}
+[lookup] 下までスクロール: 20 件
+[POST /api/options] {"tool":"list_menu_items","args":{"restaurantId":"hanakago","cursor":"hanakago-20","limit":10}}
+[lookup] 下までスクロール: 24 件
+[POST /api/options] {"tool":"list_menu_items","args":{"restaurantId":"hanakago","query":"鴨","limit":10}}
+[lookup] 「鴨」で検索: 鴨の昆布締め 1,800円 / 鴨の炊き合わせ 1,400円 / 鴨の天ぷら 1,600円 / 鴨の土鍋ごはん 2,200円
+[edit] 事前注文: 1 行目の数量を 3 に、2 行目に「鴨の土鍋ごはん」を 1 つ
+[POST /api/approval] {"surfaceId":"approval_53877ea2fc894cc3bdbfb7de20b05e15","approved":true,"input":{"restaurantId":"hanakago","date":"2026-11-20","time":["19:00"],"partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"items":[{"menuItemId":"hanakago-01","quantity":3},{"menuItemId":"hanakago-12","quantity":1}],"notes":""}}
+[click] 承認して実行
+[sqlite] reservations: {"id":1,"restaurant_id":"hanakago","date":"2026-11-20","time":"19:00","party_size":4,"name":"山田 花子","phone":"090-1234-5678","notes":"","created_at":"2026-11-12 17:06:05"}
+[sqlite] reservation_items: [{"menu_item_id":"hanakago-01","name":"鯛の昆布締め","quantity":3},{"menu_item_id":"hanakago-12","name":"鴨の土鍋ごはん","quantity":1}]
+[chat]
+来週金曜の夜、4人で京都の和食を予約したい。予約フォームを出して
+🔧 reservations__search_availability {"date":"2026-11-20","partySize":4}
+来週金曜(2026-11-20)、4名で空いている和食のお店です。内容を確認して送信してください。
+▶ submit_reservation {"restaurantId":["hanakago"],"date":"2026-11-20T00:00:00Z","time":["19:00"],"partySize":"4","name":"山田 太郎","phone":"090-1234-5678"}
+🔧 reservations__list_menu_items {"restaurantId":"hanakago"}
+🔧 reservations__create_reservation {"restaurantId":"hanakago","date":"2026-11-20","time":"19:00","partySize":4,"contact":{"name":"山田 太郎","phone":"090-1234-5678"},"items":[{"menuItemId":"hanakago-01","quantity":4}]}
+▶ 承認 {"restaurantId":"hanakago","date":"2026-11-20","time":["19:00"],"partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"items":[{"menuItemId":"hanakago-01","quantity":0}],"notes":""}
+入力を確認してください。
+事前注文 1 行目 数量: 小さすぎる値: numberは1以上である必要があります
+▶ 承認 {"restaurantId":"hanakago","date":"2026-11-20","time":["19:00"],"partySize":4,"contact":{"name":"山田 花子","phone":"090-1234-5678"},"items":[{"menuItemId":"hanakago-01","quantity":3},{"menuItemId":"hanakago-12","quantity":1}],"notes":""}
+🔧 reservations__list_menu_items {"restaurantId":"hanakago","ids":["hanakago-01","hanakago-12"]}
+予約は保存されました(予約ID: **1**)。ただ、保存された内容は、私が送った内容と一部違っています。承認画面で変更されたものと思われます。
+
+| 項目 | 保存された内容 |
+|---|---|
+| お店 | 花かご(祇園・東山/懐石) |
+| 日付 | 2026-11-20(金) |
+| 時間 | 19:00 |
+| 人数 | 4名 |
+| お名前 | 山田 花子 |
+| 電話番号 | 090-1234-5678 |
+| 事前注文 | 鯛の昆布締め 1,800円 × 3、鴨の土鍋ごはん 2,200円 × 1 |
+
+違っていた点は2つです。
+
+- **お名前**: フォームでは「山田 太郎」でしたが、保存されたのは「山田 花子」です。
+- **事前注文**: 私は鯛の昆布締めを4名分で送りましたが、保存されたのは上の2品です。
+
+意図した変更であれば、このままで問題ありません。お名前が誤りなら、フォームから入れ直してください。
+[surfaces]
+- heading "A2UI" [level=1]
+- paragraph:
+  - strong: 京都 和食の予約
+- text: お店
+- button "花かご(祇園・東山/懐石)" [pressed]
+- button "鴨四季(河原町・先斗町/割烹)"
+- button "おばんざい 紬(京都駅周辺/おばんざい)"
+- text: 日付
+- textbox: 2026-11-20
+- text: 時間
+- button "17:30"
+- button "18:00"
+- button "18:30"
+- button "19:00" [pressed]
+- button "19:30"
+- button "20:00"
+- text: 人数
+- spinbutton: "4"
+- text: お名前
+- 'textbox "例: 山田 太郎"': 山田 太郎
+- text: 電話番号
+- 'textbox "例: 09012345678"': 090-1234-5678
+- button "予約内容を確認へ":
+  - paragraph: 予約内容を確認へ

@@ -1,0 +1,24 @@
+packages:
+  - server
+  - client
+
+# server と client は依存を分ける: Claude Agent SDK は zod 4、A2UI は zod 3.25 を要求する。
+
+minimumReleaseAgeExclude:
+  - "@biomejs/biome@2.6.7"
+  - "@biomejs/cli-android-arm64@2.6.7"
+  - "@biomejs/cli-android-x64@2.6.7"
+  - "@biomejs/cli-darwin-arm64@2.6.7"
+  - "@biomejs/cli-darwin-x64@2.6.7"
+  - "@biomejs/cli-linux-arm64-musl@2.6.7"
+  - "@biomejs/cli-linux-arm64@2.6.7"
+  - "@biomejs/cli-linux-x64-musl@2.6.7"
+  - "@biomejs/cli-linux-x64@2.6.7"
+  - "@biomejs/cli-win32-arm64@2.6.7"
+  - "@biomejs/cli-win32-x64@2.6.7"
+
+overrides:
+  # @a2ui/markdown-it 0.2.2 は peer に @a2ui/web_core ^0.14 を指定しているが、@a2ui/react 0.15 は web_core 0.15 と組で使う。
+  "@a2ui/markdown-it>@a2ui/web_core": 0.15.0
+  # @a2ui/markdown-it 0.2.2 が固定している dompurify 3.4.11 には既知の脆弱性がある。
+  dompurify: 3.4.17

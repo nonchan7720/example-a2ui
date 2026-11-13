@@ -147,3 +147,9 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# feedback-gate の状態ファイル
+.claude/.gate-status/
+
+# 予約の SQLite データベース
+server/data/
