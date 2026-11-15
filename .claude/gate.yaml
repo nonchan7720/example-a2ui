@@ -41,6 +41,8 @@ rules:
             cmd: pnpm lint
           - name: typecheck-copilotkit-agent
             cmd: pnpm --filter copilotkit-agent typecheck
+          - name: test-copilotkit-agent
+            cmd: pnpm --filter copilotkit-agent test
     run_checks:
       - verify
   - match:

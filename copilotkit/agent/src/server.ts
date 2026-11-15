@@ -1,22 +1,25 @@
 // エージェントランタイム: CopilotKit のランタイム(AG-UI のエンドポイント)と Claude Agent SDK を 1 つのプロセスで動かす。
 // ブラウザからは直接呼ばせず、Go のゲートウェイ(../gateway)だけがここへ中継する。
 import { createServer } from 'node:http'
-import { ClaudeAgentAdapter } from '@ag-ui/claude-agent-sdk'
 import type { AbstractAgent } from '@ag-ui/client'
 import { CopilotRuntime, InMemoryAgentRunner } from '@copilotkit/runtime/v2'
 import { createCopilotNodeListener } from '@copilotkit/runtime/v2/node'
-import { createReservationMcp, TOOLS } from './reservations.ts'
+import { Approvals, GatedClaudeAgent } from './approval-gate.ts'
+import { CREATE_TOOL, createReservationMcp, READ_TOOLS, reservationInput } from './reservations.ts'
 
 const SYSTEM_PROMPT = `You are the assistant inside a restaurant reservation app for Kyoto.
 - When the user wants a reservation, call search_availability first.
 - Never call create_reservation directly. First call the confirm_reservation tool with your proposal. It shows the user an approval card where they can change the values, and returns JSON: {"approved": true, ...the values to use} or {"approved": false}.
-- If approved, call create_reservation with exactly the returned values. If not approved, do not save anything and ask what to change.
+- If approved, call create_reservation with the returned values. If not approved, do not save anything and ask what to change.
+- The server enforces this: create_reservation is refused without an approval, and it saves the values the user approved, whatever arguments you pass. Tell the user what the tool result says was saved.
 - Say a reservation is made only after create_reservation returned a reservationId.
 Reply in the user's language, in one or two short sentences.`
 
 // ClaudeAgentAdapter は AG-UI の 1 回の実行(RunAgentInput)を Agent SDK の query() に変換し、AG-UI のイベントを返す。
 // ブラウザ側で登録したツール(useHumanInTheLoop の confirm_reservation)は、アダプターが `ag_ui` という MCP サーバーとして Claude に見せる。
-const agent = new ClaudeAgentAdapter({
+// GatedClaudeAgent は、それに「confirm_reservation で承認された値でしか create_reservation を実行させない」を足したもの(approval-gate.ts)。
+GatedClaudeAgent.approvals = new Approvals({ confirmTool: 'confirm_reservation', gatedTool: CREATE_TOOL, schema: reservationInput })
+const agent = new GatedClaudeAgent({
   agentId: 'default',
   description: 'Restaurant reservation assistant',
   model: process.env.COPILOTKIT_AGENT_MODEL ?? 'claude-sonnet-5-5',
@@ -25,8 +28,8 @@ const agent = new ClaudeAgentAdapter({
   tools: [],
   settingSources: [],
   mcpServers: { reservations: createReservationMcp() },
-  allowedTools: TOOLS,
-  permissionMode: 'dontAsk',
+  // 読むだけのツールは常に許可する。それ以外(予約の保存)は canUseTool に来る。
+  allowedTools: READ_TOOLS,
   maxTurns: 10,
 })
 

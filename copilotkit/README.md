@@ -49,6 +49,7 @@ pnpm --filter copilotkit-web build
 - `web/src/ReservationApproval.tsx`: 承認カード。Claude の提案を初期値にし、ユーザーが直して承認できる。
 - `gateway/main.go`: 標準ライブラリだけの中継サーバー。`/api/copilotkit/` を中継し(SSE は溜めずに流す)、それ以外には SPA を返す。認証やレート制限を足す場所。
 - `agent/src/server.ts`: `CopilotRuntime` に `ClaudeAgentAdapter` を登録し、`createCopilotNodeListener` で Node の HTTP サーバーにする。
+- `agent/src/approval-gate.ts`: 承認された値でしか予約を保存させない仕組み(下の「承認の強制」)。
 - `agent/src/reservations.ts`: 予約のツール(プロセス内 MCP サーバー、データは架空でメモリ上のみ)。
 
 Go が中継するだけで済むのは、ブラウザとランタイムの間が普通の HTTP(JSON の POST と SSE の応答)だからです。CopilotKit のランタイムは Node のライブラリなので、Go に置き換えることはできず、エージェントランタイム側のプロセスに入れています。
@@ -62,13 +63,24 @@ Claude Agent SDK(TypeScript)の連携では、`useInterrupt`(割り込み)は使
 3. ユーザーが値を直して「承認して予約」を押すと、`respond({ approved: true, ...値 })` がツールの結果として Claude に返り、実行が続く。
 4. Claude が、返ってきた値で `create_reservation` を呼ぶ。
 
-承認を通すかどうかは、システムプロンプトの指示(「`create_reservation` の前に必ず `confirm_reservation` を呼ぶ」)に頼っています。Claude が指示を守らなければ承認なしで保存されるので、確実に止めたい操作には、ルートのサンプル(`server/`)のように Agent SDK の `canUseTool` でサーバー側から止める方法が向いています。
+### 承認の強制(`canUseTool`)
+
+カードを出すだけでは、「承認してから保存する」かどうかは Claude 次第です。そこで、Agent SDK の `canUseTool` でサーバー側から止めています(`agent/src/approval-gate.ts`)。
+
+- `create_reservation` は常に許可するツール(`allowedTools`)に入れていないので、実行の前に `canUseTool` に来る。
+- `confirm_reservation` の結果が Claude に返るところをエージェントランタイムが見て、`{"approved": true, ...}` なら、その値をスレッドごとに覚える。
+- `canUseTool` は、覚えた承認が無ければ断る。あれば、Claude が書いた引数ではなく**承認された値**に入力を差し替えて(`updatedInput`)実行する。
+- 承認は 1 回の保存で使い切る。キャンセルされたら、前の承認も取り消す。
+
+`ClaudeAgentAdapter` には、ブラウザ側のツールの結果を見るための公開の口がありません。そのため `buildOptions` を上書きしたサブクラス(`GatedClaudeAgent`)にしています。アダプターの内部の作りに寄っているので、`@ag-ui/claude-agent-sdk` を上げるときは通しの確認が必要です。
 
 ## 確認したこと
 
 2026-11-15 に、ビルドした SPA を Go のゲートウェイから開き、ヘッドレスの Chromium で次を確かめました。
 
 - 予約の依頼 → 承認カードが出る → 人数を 4 から 3 に直して承認 → 3 名で保存され、予約番号が返る([保存後の画面](../docs/evidence/copilotkit/02-saved.png))
+- 承認を飛ばして `create_reservation` を直接呼ぶよう指示した Claude で実行 → `canUseTool` が断り、保存されない
+- `pnpm --filter copilotkit-agent test`: 承認の記録と `canUseTool` の判定(7 件)
 - `go test ./...`: 中継先のパスとトークン、SSE が途中で届くこと、エージェントに届かないときの 502、SPA の配信
 
 確かめていないこと: キャンセルしたときの流れ、`AGENT_TOKEN` を設定した状態での通し、複数ユーザーでの同時利用。

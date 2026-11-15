@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "COPILOTKIT_TELEMETRY_DISABLED=true node src/server.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@ag-ui/claude-agent-sdk": "0.0.9",

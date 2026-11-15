@@ -14,8 +14,19 @@ const saved: Reservation[] = []
 const json = (value: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(value) }] })
 
 export const SERVER = 'reservations'
-/** 許可するツール名(`mcp__<サーバー名>__<ツール名>`)。 */
-export const TOOLS = ['search_availability', 'create_reservation', 'list_reservations'].map((name) => `mcp__${SERVER}__${name}`)
+/** 常に許可する、読むだけのツール(`mcp__<サーバー名>__<ツール名>`)。 */
+export const READ_TOOLS = ['search_availability', 'list_reservations'].map((name) => `mcp__${SERVER}__${name}`)
+/** 予約を保存するツール。ユーザーの承認が要る(approval-gate.ts)。 */
+export const CREATE_TOOL = `mcp__${SERVER}__create_reservation`
+
+/** create_reservation の入力。承認カード(confirm_reservation)が返す値も、この形で確かめる。 */
+export const reservationInput = z.object({
+  restaurantId: z.string(),
+  date: z.string().describe('YYYY-MM-DD'),
+  time: z.string().describe('HH:mm'),
+  partySize: z.number().int().min(1),
+  name: z.string().min(1),
+})
 
 export function createReservationMcp() {
   return createSdkMcpServer({
@@ -29,14 +40,8 @@ export function createReservationMcp() {
       ),
       tool(
         'create_reservation',
-        'Save a reservation. Call it only with the values the user approved through confirm_reservation.',
-        {
-          restaurantId: z.string(),
-          date: z.string().describe('YYYY-MM-DD'),
-          time: z.string().describe('HH:mm'),
-          partySize: z.number().int().min(1),
-          name: z.string().min(1),
-        },
+        'Save a reservation. It runs only after the user approved through confirm_reservation, and saves the approved values; the result echoes what was saved.',
+        reservationInput.shape,
         async (input) => {
           const restaurant = RESTAURANTS.find((candidate) => candidate.id === input.restaurantId)
           if (!restaurant?.times.includes(input.time)) return { ...json({ error: 'その店のその時刻は空いていません' }), isError: true }
