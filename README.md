@@ -8,6 +8,8 @@ Claude Agent SDK(TypeScript)と [A2UI](https://github.com/a2ui-project/a2ui) v1.
 
 ![承認フォーム](docs/evidence/reservation/09-approval-edited.png)
 
+CopilotKit を使い、Go のサーバーを挟む構成(SPA → Go → エージェントランタイム)のサンプルは [copilotkit/](copilotkit/README.md) にあります。
+
 実際に動かした結果(動画・スクリーンショット・Claude の生出力・確認できたこと/未確認のこと)は [docs/VERIFICATION.md](docs/VERIFICATION.md) にあります。
 
 ## 起動手順
@@ -38,6 +40,7 @@ pnpm dev                       # server (http://127.0.0.1:8787) と client (http
 | コマンド | 内容 |
 | --- | --- |
 | `pnpm dev` | server と client を起動 |
+| `pnpm dev:copilotkit` | CopilotKit のサンプルの agent と web を起動([copilotkit/README.md](copilotkit/README.md)) |
 | `pnpm test` | 単体テスト(壊れた DSL が error の part になること、承認フォームの組み立て、予約の保存とメニューのページ分けなど。Claude は呼ばない) |
 | `pnpm typecheck` / `pnpm lint` / `pnpm build` | 型チェック / Biome / client のビルド |
 | `pnpm e2e [reservation\|cancel\|documents]` | 起動中のアプリをヘッドレスの Chromium で操作し、動画・スクリーンショット・ダウンロードしたファイルを `docs/evidence/` に残す(本物の Claude を呼ぶ) |

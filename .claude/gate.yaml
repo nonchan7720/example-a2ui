@@ -32,7 +32,42 @@ rules:
     run_checks:
       - verify
   - match:
+      - copilotkit/agent/src/**/*.ts
+      - copilotkit/agent/package.json
+      - copilotkit/agent/tsconfig.json
+    run:
+      - parallel:
+          - name: lint
+            cmd: pnpm lint
+          - name: typecheck-copilotkit-agent
+            cmd: pnpm --filter copilotkit-agent typecheck
+          - name: test-copilotkit-agent
+            cmd: pnpm --filter copilotkit-agent test
+    run_checks:
+      - verify
+  - match:
+      - copilotkit/web/src/**/*.{ts,tsx,css}
+      - copilotkit/web/index.html
+      - copilotkit/web/vite.config.ts
+      - copilotkit/web/package.json
+      - copilotkit/web/tsconfig.json
+    run:
+      - parallel:
+          - name: lint
+            cmd: pnpm lint
+          - name: typecheck-copilotkit-web
+            cmd: pnpm --filter copilotkit-web typecheck
+    run_checks:
+      - verify
+  - match:
+      - copilotkit/gateway/**/*.go
+      - copilotkit/gateway/go.mod
+    run:
+      - name: test-gateway
+        cmd: cd copilotkit/gateway && go vet ./... && go test ./...
+  - match:
       - e2e/**/*.cjs
+      - copilotkit/e2e/**/*.{cjs,ts}
       - biome.json
       - package.json
       - pnpm-workspace.yaml

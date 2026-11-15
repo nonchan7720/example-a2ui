@@ -1,0 +1,3 @@
+[gate] confirm_reservation の回答: 承認 {"restaurantId":"kikunoi","date":"2026-11-20","time":"18:00","partySize":3,"name":"山田"}
+[gate] canUseTool mcp__reservations__create_reservation {"restaurantId":"kikunoi","date":"2026-11-20","time":"18:00","partySize":3,"name":"山田"} -> 許可(承認された値で実行) {"restaurantId":"kikunoi","date":"2026-11-20","time":"18:00","partySize":3,"name":"山田"}
+[reservations] 保存 {"id":"R0001","restaurantId":"kikunoi","date":"2026-11-20","time":"18:00","partySize":3,"name":"山田"}

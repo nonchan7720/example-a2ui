@@ -1,0 +1,26 @@
+[GET http://127.0.0.1:8080/api/copilotkit/info]
+[POST http://127.0.0.1:8080/api/copilotkit/agent/default/run]
+[say] 2026-11-20 の夜、4人で京都の和食を予約したい。名前は山田です。
+[fill] 人数 <- 3
+[POST http://127.0.0.1:8080/api/copilotkit/agent/default/run]
+[click] 承認して予約
+[check] OK: canUseTool が許可した
+[check] OK: 直した人数(3 名)で保存された
+[chat]
+- main:
+  - text: 2026-11-20 の夜、4人で京都の和食を予約したい。名前は山田です。
+  - button "Thought for a few seconds"
+  - paragraph: ✔ 承認しました
+  - paragraph: "予約が完了しました(予約ID: R0001)。菊乃井(懐石)に、2026-11-20の18:00、山田様名義で登録しています。"
+  - paragraph: 承認カードで人数が4名から3名に変更されたため、人数は3名で保存されています。4名に戻す場合はお知らせください。
+  - button "Copy"
+  - button "予約する"
+  - button "Add attachments" [disabled]
+  - textbox "Type a message..."
+  - button "Send message" [disabled]
+  - text: AI can make mistakes. Please verify important information.
+[agent]
+[gate] confirm_reservation の回答: 承認 {"restaurantId":"kikunoi","date":"2026-11-20","time":"18:00","partySize":3,"name":"山田"}
+[gate] canUseTool mcp__reservations__create_reservation {"restaurantId":"kikunoi","date":"2026-11-20","time":"18:00","partySize":3,"name":"山田"} -> 許可(承認された値で実行) {"restaurantId":"kikunoi","date":"2026-11-20","time":"18:00","partySize":3,"name":"山田"}
+[reservations] 保存 {"id":"R0001","restaurantId":"kikunoi","date":"2026-11-20","time":"18:00","partySize":3,"name":"山田"}
+

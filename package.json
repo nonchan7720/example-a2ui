@@ -7,13 +7,15 @@
     "node": ">=26"
   },
   "scripts": {
-    "dev": "pnpm --recursive --parallel dev",
+    "dev": "pnpm --parallel --filter a2ui-chat-server --filter a2ui-chat-client dev",
     "lint": "biome check .",
     "format": "biome check --write .",
     "typecheck": "pnpm --recursive typecheck",
-    "test": "pnpm --recursive test",
-    "build": "pnpm --filter a2ui-chat-client build",
-    "e2e": "node e2e/run.cjs"
+    "test": "pnpm --recursive test && cd copilotkit/gateway && go test ./...",
+    "build": "pnpm --filter a2ui-chat-client --filter copilotkit-web build",
+    "e2e": "node e2e/run.cjs",
+    "dev:copilotkit": "pnpm --parallel --filter copilotkit-agent --filter copilotkit-web dev",
+    "e2e:copilotkit": "node copilotkit/e2e/run.cjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.7",

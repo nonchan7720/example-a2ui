@@ -1,8 +1,11 @@
 packages:
   - server
   - client
+  - copilotkit/agent
+  - copilotkit/web
 
 # server と client は依存を分ける: Claude Agent SDK は zod 4、A2UI は zod 3.25 を要求する。
+# copilotkit/ は CopilotKit を使う別のサンプル(copilotkit/README.md)。
 
 minimumReleaseAgeExclude:
   - "@biomejs/biome@2.6.7"
@@ -22,3 +25,7 @@ overrides:
   "@a2ui/markdown-it>@a2ui/web_core": 0.15.0
   # @a2ui/markdown-it 0.2.2 が固定している dompurify 3.4.11 には既知の脆弱性がある。
   dompurify: 3.4.17
+
+# @scarf/scarf(CopilotKit の依存)の postinstall はインストール統計を送るだけなので、実行しない。
+allowBuilds:
+  "@scarf/scarf": false

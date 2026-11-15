@@ -1,0 +1,61 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+main {
+  max-width: 760px;
+  height: 100%;
+  margin: 0 auto;
+}
+.approval {
+  display: grid;
+  gap: 8px;
+  max-width: 320px;
+  padding: 16px;
+  border: 1px solid #d9dde3;
+  border-radius: 12px;
+}
+.approval p {
+  margin: 0;
+}
+.approval label {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  color: #59636e;
+}
+.approval input {
+  padding: 6px 8px;
+  font-size: 14px;
+  border: 1px solid #d9dde3;
+  border-radius: 6px;
+}
+.approval div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+.approval button {
+  padding: 6px 12px;
+  border: 1px solid #d9dde3;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+.approval button.primary {
+  color: #fff;
+  background: #2f6feb;
+  border-color: #2f6feb;
+}
+.approval button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.approval-done {
+  margin: 0;
+  font-size: 13px;
+  color: #59636e;
+}

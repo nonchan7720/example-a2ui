@@ -1,0 +1,28 @@
+[GET http://127.0.0.1:8080/api/copilotkit/info]
+[POST http://127.0.0.1:8080/api/copilotkit/agent/default/run]
+[say] 2026-11-20 の夜、4人で京都の和食を予約したい。名前は山田です。
+[POST http://127.0.0.1:8080/api/copilotkit/agent/default/run]
+[click] キャンセル
+[check] OK: 回答が「承認なし」として記録された
+[check] OK: 何も保存されていない
+[chat]
+- main:
+  - text: 2026-11-20 の夜、4人で京都の和食を予約したい。名前は山田です。
+  - button "Thought for a few seconds"
+  - paragraph: ✖ キャンセルしました
+  - paragraph: 予約はまだ保存していません。承認カードが承認されなかったためです。ご希望の変更を教えてください。
+  - paragraph: 2026-11-20 に4名で空いているのは次の店です。
+  - list:
+    - listitem: "菊乃井(懐石): 18:00 / 19:30"
+    - listitem: "天ぷら 松: 17:30 / 20:00"
+    - listitem: "鮨 いわ: 18:30"
+  - paragraph: 別の店や時間にしますか。
+  - button "Copy"
+  - button "予約する"
+  - button "Add attachments" [disabled]
+  - textbox "Type a message..."
+  - button "Send message" [disabled]
+  - text: AI can make mistakes. Please verify important information.
+[agent]
+[gate] confirm_reservation の回答: 承認なし
+
