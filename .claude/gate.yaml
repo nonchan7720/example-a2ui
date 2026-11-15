@@ -67,6 +67,7 @@ rules:
         cmd: cd copilotkit/gateway && go vet ./... && go test ./...
   - match:
       - e2e/**/*.cjs
+      - copilotkit/e2e/**/*.{cjs,ts}
       - biome.json
       - package.json
       - pnpm-workspace.yaml

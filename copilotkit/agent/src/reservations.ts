@@ -47,6 +47,7 @@ export function createReservationMcp() {
           if (!restaurant?.times.includes(input.time)) return { ...json({ error: 'その店のその時刻は空いていません' }), isError: true }
           const reservation = { id: `R${String(saved.length + 1).padStart(4, '0')}`, ...input }
           saved.push(reservation)
+          console.log(`[reservations] 保存 ${JSON.stringify(reservation)}`)
           return json({ reservationId: reservation.id, saved: reservation })
         },
       ),

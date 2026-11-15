@@ -32,16 +32,19 @@ export class Approvals {
     if (toolName !== this.gate.confirmTool) return
     this.pending.delete(threadId)
     const answer = parseAnswer(result)
-    if (answer?.approved !== true) return
-    const values = this.gate.schema.safeParse(answer)
-    if (values.success) this.pending.set(threadId, values.data)
+    const values = answer?.approved === true ? this.gate.schema.safeParse(answer) : undefined
+    if (values?.success) this.pending.set(threadId, values.data)
+    console.log(`[gate] ${toolName} の回答: ${values?.success ? `承認 ${JSON.stringify(values.data)}` : '承認なし'}`)
   }
 
   /** そのスレッドの canUseTool。 */
   canUseTool(threadId: string): CanUseTool {
-    return async (toolName) => {
+    return async (toolName, input) => {
       if (toolName !== this.gate.gatedTool) return { behavior: 'deny', message: 'This tool is not available.' }
       const approved = this.pending.get(threadId)
+      console.log(
+        `[gate] canUseTool ${toolName} ${JSON.stringify(input)} -> ${approved ? `許可(承認された値で実行) ${JSON.stringify(approved)}` : '拒否(承認が無い)'}`,
+      )
       if (!approved) {
         return { behavior: 'deny', message: `The user has not approved this. Call ${this.gate.confirmTool} first and wait for {"approved": true}.` }
       }

@@ -12,7 +12,7 @@ Go ゲートウェイ(gateway/)        SPA の配信と、エージェントラ�
 エージェントランタイム(agent/)    CopilotKit ランタイム + ClaudeAgentAdapter + Claude Agent SDK
 ```
 
-![承認カード](../docs/evidence/copilotkit/01-approval.png)
+![承認カード](../docs/evidence/copilotkit/approve/02-edited.png)
 
 ## 起動手順
 
@@ -33,6 +33,8 @@ SPA をビルドすれば、Vite なしで Go だけがブラウザの相手を�
 pnpm --filter copilotkit-web build
 (cd copilotkit/gateway && go run .)  # http://127.0.0.1:8080 で SPA も返す
 ```
+
+`pnpm e2e:copilotkit` は、ビルドした SPA をヘッドレスの Chromium で操作し、証跡を `docs/evidence/copilotkit/` に残します(本物の Claude を呼びます)。
 
 | 環境変数 | 既定値 | 使う側 | 意味 |
 | --- | --- | --- | --- |
@@ -76,14 +78,11 @@ Claude Agent SDK(TypeScript)の連携では、`useInterrupt`(割り込み)は使
 
 ## 確認したこと
 
-2026-11-15 に、ビルドした SPA を Go のゲートウェイから開き、ヘッドレスの Chromium で次を確かめました。
+本物の Claude 呼び出しで通しで動かした結果(動画・スクリーンショット・ログ・確認できたこと/未確認のこと)は [VERIFICATION.md](VERIFICATION.md) にあります。
 
-- 予約の依頼 → 承認カードが出る → 人数を 4 から 3 に直して承認 → 3 名で保存され、予約番号が返る([保存後の画面](../docs/evidence/copilotkit/02-saved.png))
-- 承認を飛ばして `create_reservation` を直接呼ぶよう指示した Claude で実行 → `canUseTool` が断り、保存されない
-- `pnpm --filter copilotkit-agent test`: 承認の記録と `canUseTool` の判定(7 件)
-- `go test ./...`: 中継先のパスとトークン、SSE が途中で届くこと、エージェントに届かないときの 502、SPA の配信
-
-確かめていないこと: キャンセルしたときの流れ、`AGENT_TOKEN` を設定した状態での通し、複数ユーザーでの同時利用。
+- 値を直して承認 → 直した値で保存される
+- キャンセル → 何も保存されない
+- 承認を飛ばして保存のツールを直接呼ばせる → `canUseTool` が断る
 
 ## 注意
 

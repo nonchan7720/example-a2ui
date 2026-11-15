@@ -1,0 +1,1 @@
+[gate] confirm_reservation の回答: 承認なし
