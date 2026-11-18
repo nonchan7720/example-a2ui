@@ -1,0 +1,25 @@
+SDK→LiteLLM 3 件 / LiteLLM→Bedrock 3 件
+  リクエスト 1: POST /model/jp.anthropic.claude-sonnet-4-5-20250929-v1:0/invoke-with-response-stream
+    tools=完全一致 / defer_loading=["DeferredToolPlaceholder"]
+    tool_reference ブロック=0 個
+    Bedrock へ送るベータ=context-management-2025-06-27, effort-2025-11-24, mid-conversation-tool-changes-2026-07-01, per-turn-control-2026-07-01, thinking-display-updates-2026-08-18, tool-search-tool-2025-10-19
+    落としたベータ=claude-code-20250219, oauth-2025-04-20, interleaved-thinking-2025-05-14, inline-tools-2026-09-15, advisor-tool-2026-03-01, thinking-token-count-2026-05-13, advanced-tool-use-2025-11-20, extended-cache-ttl-2025-04-11
+    足したベータ=tool-search-tool-2025-10-19
+    落とした項目=model, context_management, output_config, stream
+    thinking: {"type":"adaptive","display":"updates"} → {"type":"enabled","budget_tokens":2048}
+  リクエスト 2: POST /model/jp.anthropic.claude-sonnet-4-5-20250929-v1:0/invoke-with-response-stream
+    tools=完全一致 / defer_loading=["DeferredToolPlaceholder","mcp__biz__warehouse_secret_code"]
+    tool_reference ブロック=1 個
+    Bedrock へ送るベータ=context-management-2025-06-27, effort-2025-11-24, mid-conversation-tool-changes-2026-07-01, per-turn-control-2026-07-01, thinking-display-updates-2026-08-18, tool-search-tool-2025-10-19
+    落としたベータ=claude-code-20250219, oauth-2025-04-20, interleaved-thinking-2025-05-14, inline-tools-2026-09-15, advisor-tool-2026-03-01, thinking-token-count-2026-05-13, advanced-tool-use-2025-11-20, extended-cache-ttl-2025-04-11
+    足したベータ=tool-search-tool-2025-10-19
+    落とした項目=model, context_management, output_config, stream
+    thinking: {"type":"adaptive","display":"updates"} → {"type":"enabled","budget_tokens":2048}
+  リクエスト 3: POST /model/jp.anthropic.claude-sonnet-4-5-20250929-v1:0/invoke-with-response-stream
+    tools=完全一致 / defer_loading=["DeferredToolPlaceholder","mcp__biz__warehouse_secret_code"]
+    tool_reference ブロック=1 個
+    Bedrock へ送るベータ=context-management-2025-06-27, effort-2025-11-24, mid-conversation-tool-changes-2026-07-01, per-turn-control-2026-07-01, thinking-display-updates-2026-08-18, tool-search-tool-2025-10-19
+    落としたベータ=claude-code-20250219, oauth-2025-04-20, interleaved-thinking-2025-05-14, inline-tools-2026-09-15, advisor-tool-2026-03-01, thinking-token-count-2026-05-13, advanced-tool-use-2025-11-20, extended-cache-ttl-2025-04-11
+    足したベータ=tool-search-tool-2025-10-19
+    落とした項目=model, context_management, output_config, stream
+    thinking: {"type":"adaptive","display":"updates"} → {"type":"enabled","budget_tokens":2048}

@@ -6,7 +6,7 @@
 
 **動く。** LiteLLM を挟んでも、直接つないだときと同じく ToolSearch で必要なツールだけが読み込まれた。LiteLLM は tool search に関わる部分(`defer_loading`、`tool_reference` ブロック、`anthropic-beta` ヘッダー)を変えずに上流へ渡していた。
 
-ただし確かめたのは「上流が Anthropic API、認証は OAuth トークンの転送」の構成だけです([未確認のこと](#未確認のこと))。
+ただし実際に動かして確かめたのは「上流が Anthropic API、認証は OAuth トークンの転送」の構成だけです。上流が Bedrock の場合は、LiteLLM が Bedrock へ送る内容までしか確かめていません([上流が Bedrock の場合](#上流が-bedrock-の場合)、[未確認のこと](#未確認のこと))。
 
 ## 実行した環境
 
@@ -65,13 +65,39 @@ Anthropic API に届いたリクエストを見ると:
 
 `ENABLE_TOOL_SEARCH=false` では ToolSearch ツール自体が無くなり、15 個の MCP ツールすべてが最初から `tools` に載った。
 
+## 上流が Bedrock の場合
+
+**Bedrock が実際に受け付けるかは未確認です。** Bedrock を呼べる認証情報が無かったため、LiteLLM が Bedrock へ送ろうとする内容だけを確かめました。
+
+方法: 上の検証で SDK が LiteLLM へ送った実リクエスト 3 件を、Bedrock 向け設定([`bedrock/litellm.yaml`](../verify/litellm-toolsearch/bedrock/litellm.yaml)、東京リージョンの `jp.anthropic.claude-sonnet-4-5-20250929-v1:0`)の LiteLLM に流し直し、Bedrock の代わりに置いた中継で記録した。結果は [`evidence/litellm-toolsearch/bedrock-conversion.txt`](evidence/litellm-toolsearch/bedrock-conversion.txt)。
+
+| 項目 | LiteLLM が Bedrock へ送った内容 |
+| --- | --- |
+| 宛先 | `POST /model/jp.anthropic.claude-sonnet-4-5-20250929-v1:0/invoke-with-response-stream` |
+| `tools`(`defer_loading` を含む) | SDK が送ったものと完全一致 |
+| `tool_reference` ブロック | 残っている |
+| tool search のベータ | `advanced-tool-use-2025-11-20` を落とし、Bedrock 用の `tool-search-tool-2025-10-19` に置き換えた |
+| そのまま送ったベータ | `context-management-2025-06-27`、`effort-2025-11-24`、`mid-conversation-tool-changes-2026-07-01`、`per-turn-control-2026-07-01`、`thinking-display-updates-2026-08-18` |
+| 落としたベータ | `claude-code-20250219`、`oauth-2025-04-20`、`interleaved-thinking-2025-05-14`、`inline-tools-2026-09-15`、`advisor-tool-2026-03-01`、`thinking-token-count-2026-05-13`、`extended-cache-ttl-2025-04-11` |
+| 落とした項目 | `context_management`、`output_config`(`model` と `stream` は URL に移る) |
+| `thinking` | `{"type":"adaptive","display":"updates"}` → `{"type":"enabled","budget_tokens":2048}` |
+
+読み取れること:
+
+- tool search に必要なもの(`defer_loading`、`tool_reference`、tool search のベータ)は LiteLLM を通っても残る。LiteLLM は tool search を Bedrock 向けに通すつもりで作られている。
+- 残る不安は Bedrock 側。SDK 0.3.317 は選ばれたツールを会話の途中で `tools` に足す方式で、LiteLLM は `mid-conversation-tool-changes-2026-07-01` などの新しいベータも Bedrock へ送る。Bedrock がこれらを受け付けるか、受け付けたうえで途中の `tools` の変更を許すかは、実際に呼ばないと分からない。
+- 流し直したリクエストは、SDK が Anthropic API の `claude-sonnet-5-5` 向けに作ったもの。Bedrock の Sonnet 4.5 を相手にしたときに SDK が送る内容と同じとは限らない。
+
+Bedrock を呼べる環境では、[`litellm.yaml`](../verify/litellm-toolsearch/litellm.yaml) の `model` を `bedrock/<推論プロファイル ID>` に変え、`api_base` と `forward_client_headers_to_llm_api` を消して AWS の認証情報を渡せば、`run.sh` がそのまま実機の検証になります。
+
 ## 未確認のこと
 
 | 項目 | 理由 |
 | --- | --- |
 | `ENABLE_TOOL_SEARCH` 未設定のときの既定 | 未設定でも有効になったが、実行環境(Claude Code のクラウドセッション)の設定が既定の判定に影響している可能性を切り分けていない。LiteLLM 経由で使うなら `ENABLE_TOOL_SEARCH=true` を明示するのが確実 |
 | `ANTHROPIC_API_KEY` を LiteLLM 側に持たせる構成 | この環境にキーが無い |
-| 上流が Bedrock / Vertex AI の構成 | 試していない。LiteLLM がリクエストを別の形式に変換するので、結果が変わりうる |
+| 上流が Bedrock の構成で、Bedrock が実際に受け付けるか | Bedrock を呼べる認証情報が無い。LiteLLM が送る内容までは確かめた([上流が Bedrock の場合](#上流が-bedrock-の場合)) |
+| 上流が Vertex AI の構成 | 試していない |
 | `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` を設定した場合 | SDK のコードを読む限り tool search は無効になるが、実行しては確かめていない |
 | Python 版の SDK | 試していない |
 
@@ -84,4 +110,4 @@ cd verify/litellm-toolsearch
 bash run.sh
 ```
 
-LiteLLM のコンテナと中継を起動し、4 パターンを流して、結果を `docs/evidence/litellm-toolsearch/result.txt` に書き出します(本物の Claude を呼びます)。このディレクトリは SDK の版を 0.3.317 に固定するため、pnpm のワークスペースには入れていません。依存は `run.sh` が npm で入れます。
+LiteLLM のコンテナと中継を起動し、4 パターンを流して、結果を `docs/evidence/litellm-toolsearch/result.txt` に書き出します(本物の Claude を呼びます)。続けて `bash bedrock/run.sh` を実行すると、Bedrock 向けの変換内容を `bedrock-conversion.txt` に書き出します(こちらは Claude も Bedrock も呼びません)。このディレクトリは SDK の版を 0.3.317 に固定するため、pnpm のワークスペースには入れていません。依存は `run.sh` が npm で入れます。
