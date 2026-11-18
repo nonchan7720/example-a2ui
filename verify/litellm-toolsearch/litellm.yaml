@@ -1,0 +1,12 @@
+# LiteLLM Proxy の設定。上流は Anthropic API。
+# api_base は記録用の中継 (tap.mjs) に向けている。記録が要らなければ api_base の行を消す。
+model_list:
+  - model_name: claude-sonnet-5-5
+    litellm_params:
+      model: anthropic/claude-sonnet-5-5
+      api_base: http://127.0.0.1:4101
+
+general_settings:
+  # クライアント (Claude Agent SDK) の Authorization ヘッダーをそのまま上流へ渡す。
+  # LiteLLM 自身の認証は x-litellm-api-key ヘッダーで受ける。
+  forward_client_headers_to_llm_api: true

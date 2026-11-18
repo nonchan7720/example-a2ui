@@ -1,0 +1,81 @@
+SDK: @anthropic-ai/claude-agent-sdk 0.3.317
+LiteLLM: 1.108.9 (ghcr.io/berriai/litellm:v1.108.9)
+Node.js: v22.23.5
+
+[direct] init: ToolSearch ツール=あり / MCP ツール=15 個
+[direct] tool_use: ToolSearch {"query":"select:mcp__biz__warehouse_secret_code","max_results":1}
+[direct] tool_result: [{"type":"tool_reference","tool_name":"mcp__biz__warehouse_secret_code"}]
+[direct] tool_use: mcp__biz__warehouse_secret_code {"vault":"A7"}
+[direct] tool_result: [{"type":"text","text":"vault=A7 code=ZEBRA-638120"}]
+[direct] result: success / ターン数=3 / 合言葉を取得=成功
+[direct] 呼び出し順: ToolSearch → mcp__biz__warehouse_secret_code
+[direct] SDK の判定: mode=tst, ENABLE_TOOL_SEARCH=undefined, result=true
+
+[litellm-unset] init: ToolSearch ツール=あり / MCP ツール=15 個
+[litellm-unset] tool_use: ToolSearch {"query":"select:mcp__biz__warehouse_secret_code","max_results":1}
+[litellm-unset] tool_result: [{"type":"tool_reference","tool_name":"mcp__biz__warehouse_secret_code"}]
+[litellm-unset] tool_use: mcp__biz__warehouse_secret_code {"vault":"A7"}
+[litellm-unset] tool_result: [{"type":"text","text":"vault=A7 code=ZEBRA-348974"}]
+[litellm-unset] result: success / ターン数=3 / 合言葉を取得=成功
+[litellm-unset] 呼び出し順: ToolSearch → mcp__biz__warehouse_secret_code
+[litellm-unset] SDK の判定: mode=tst, ENABLE_TOOL_SEARCH=undefined, result=true
+
+[litellm-true] init: ToolSearch ツール=あり / MCP ツール=15 個
+[litellm-true] tool_use: ToolSearch {"query":"select:mcp__biz__warehouse_secret_code","max_results":1}
+[litellm-true] tool_result: [{"type":"tool_reference","tool_name":"mcp__biz__warehouse_secret_code"}]
+[litellm-true] tool_use: mcp__biz__warehouse_secret_code {"vault":"A7"}
+[litellm-true] tool_result: [{"type":"text","text":"vault=A7 code=ZEBRA-757884"}]
+[litellm-true] result: success / ターン数=3 / 合言葉を取得=成功
+[litellm-true] 呼び出し順: ToolSearch → mcp__biz__warehouse_secret_code
+[litellm-true] SDK の判定: mode=tst, ENABLE_TOOL_SEARCH=true, result=true
+
+[litellm-false] init: ToolSearch ツール=なし / MCP ツール=15 個
+[litellm-false] tool_use: mcp__biz__warehouse_secret_code {"vault":"A7"}
+[litellm-false] tool_result: [{"type":"text","text":"vault=A7 code=ZEBRA-643700"}]
+[litellm-false] result: success / ターン数=2 / 合言葉を取得=成功
+[litellm-false] 呼び出し順: mcp__biz__warehouse_secret_code
+[litellm-false] SDK の判定: mode=standard, ENABLE_TOOL_SEARCH=false, result=false
+
+== litellm-unset: SDK→LiteLLM 3 件 / LiteLLM→Anthropic 3 件
+  リクエスト 1 (Anthropic に届いた内容)
+    tools=16 個 / うち MCP=0 個 / defer_loading=["DeferredToolPlaceholder"]
+    tool_reference ブロック=0 個 / advanced-tool-use ベータ=あり
+    LiteLLM の前後: tools と messages=完全一致 / 落ちたベータ=なし
+    LiteLLM のキーが上流に漏れていないか: 漏れていない
+  リクエスト 2 (Anthropic に届いた内容)
+    tools=17 個 / うち MCP=1 個 / defer_loading=["DeferredToolPlaceholder","mcp__biz__warehouse_secret_code"]
+    tool_reference ブロック=1 個 / advanced-tool-use ベータ=あり
+    LiteLLM の前後: tools と messages=完全一致 / 落ちたベータ=なし
+    LiteLLM のキーが上流に漏れていないか: 漏れていない
+  リクエスト 3 (Anthropic に届いた内容)
+    tools=17 個 / うち MCP=1 個 / defer_loading=["DeferredToolPlaceholder","mcp__biz__warehouse_secret_code"]
+    tool_reference ブロック=1 個 / advanced-tool-use ベータ=あり
+    LiteLLM の前後: tools と messages=完全一致 / 落ちたベータ=なし
+    LiteLLM のキーが上流に漏れていないか: 漏れていない
+== litellm-true: SDK→LiteLLM 3 件 / LiteLLM→Anthropic 3 件
+  リクエスト 1 (Anthropic に届いた内容)
+    tools=16 個 / うち MCP=0 個 / defer_loading=["DeferredToolPlaceholder"]
+    tool_reference ブロック=0 個 / advanced-tool-use ベータ=あり
+    LiteLLM の前後: tools と messages=完全一致 / 落ちたベータ=なし
+    LiteLLM のキーが上流に漏れていないか: 漏れていない
+  リクエスト 2 (Anthropic に届いた内容)
+    tools=17 個 / うち MCP=1 個 / defer_loading=["DeferredToolPlaceholder","mcp__biz__warehouse_secret_code"]
+    tool_reference ブロック=1 個 / advanced-tool-use ベータ=あり
+    LiteLLM の前後: tools と messages=完全一致 / 落ちたベータ=なし
+    LiteLLM のキーが上流に漏れていないか: 漏れていない
+  リクエスト 3 (Anthropic に届いた内容)
+    tools=17 個 / うち MCP=1 個 / defer_loading=["DeferredToolPlaceholder","mcp__biz__warehouse_secret_code"]
+    tool_reference ブロック=1 個 / advanced-tool-use ベータ=あり
+    LiteLLM の前後: tools と messages=完全一致 / 落ちたベータ=なし
+    LiteLLM のキーが上流に漏れていないか: 漏れていない
+== litellm-false: SDK→LiteLLM 2 件 / LiteLLM→Anthropic 2 件
+  リクエスト 1 (Anthropic に届いた内容)
+    tools=52 個 / うち MCP=15 個 / defer_loading=[]
+    tool_reference ブロック=0 個 / advanced-tool-use ベータ=なし
+    LiteLLM の前後: tools と messages=完全一致 / 落ちたベータ=なし
+    LiteLLM のキーが上流に漏れていないか: 漏れていない
+  リクエスト 2 (Anthropic に届いた内容)
+    tools=52 個 / うち MCP=15 個 / defer_loading=[]
+    tool_reference ブロック=0 個 / advanced-tool-use ベータ=なし
+    LiteLLM の前後: tools と messages=完全一致 / 落ちたベータ=なし
+    LiteLLM のキーが上流に漏れていないか: 漏れていない

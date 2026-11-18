@@ -42,6 +42,8 @@ pnpm dev                       # server (http://127.0.0.1:8787) と client (http
 | `pnpm typecheck` / `pnpm lint` / `pnpm build` | 型チェック / Biome / client のビルド |
 | `pnpm e2e [reservation\|cancel\|documents]` | 起動中のアプリをヘッドレスの Chromium で操作し、動画・スクリーンショット・ダウンロードしたファイルを `docs/evidence/` に残す(本物の Claude を呼ぶ) |
 
+LiteLLM Proxy 経由で tool search が使えるかは、別に [docs/LITELLM_TOOLSEARCH.md](docs/LITELLM_TOOLSEARCH.md) で検証しています(`verify/litellm-toolsearch/`)。
+
 `.claude/gate.yaml` は [feedback-gate](https://github.com/nonchan7720/claude-hook-gate) 用の品質ゲートです。編集の直後に変更した側の lint・型チェック・単体テストを、停止時に全体(lint・typecheck・test・build)を走らせます。
 
 ## 構成

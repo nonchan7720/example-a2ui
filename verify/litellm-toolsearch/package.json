@@ -1,0 +1,13 @@
+{
+  "name": "verify-litellm-toolsearch",
+  "private": true,
+  "type": "module",
+  "description": "Claude Agent SDK (TS) 0.3.317 と LiteLLM Proxy v1.108.9 (Docker) で tool search が動くかの検証",
+  "scripts": {
+    "verify": "bash run.sh"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.317",
+    "zod": "4.6.7"
+  }
+}
